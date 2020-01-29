@@ -22,13 +22,22 @@ public class Customer {
     DateTime dropoffTime;
     int waitTime;
     int travelTime;
-    Boolean completed;
+    Boolean isPickedUp = false;
+    int assignmentAttempts = 0;
 
     public Customer(int id, int[] startPoint, int[] endPoint, Date timeWindow1, Date timeWindow2){
         this.id = id;
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.timeWindow = new DateTime[]{new DateTime(timeWindow1), new DateTime(timeWindow2)};
+    }
+
+    public int getId(){
+        return id;
+    }
+
+    public Boolean getIsPickedUp(){
+        return isPickedUp;
     }
 
     public double distance(int[] target){

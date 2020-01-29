@@ -20,9 +20,25 @@ public class Route {
         this.vehicle = vehicle;
     }
 
+    public int getCurrentPassengers(){
+        List<Customer> pickedUp = new ArrayList<>();
+        int total = 0;
+        for (Customer customer : succession){
+            if (pickedUp.contains(customer)){
+                pickedUp.remove(customer);
+                total --;
+            } else{
+                pickedUp.add(customer);
+                total ++;
+            }
+        }
+        return total;
+    }
+
     public int getPositionOf(Customer customer){
          return succession.indexOf(customer);
     }
+
 
     public DateTime getBeginningOfService(){
         double distanceFromDepot = succession.get(0).distance(vehicle.startPoint);
@@ -41,16 +57,12 @@ public class Route {
         collectedCustomers = new ArrayList<>();
         for (int i=0;i<succession.size();i++){
             if (collectedCustomers.contains(succession.get(i))){
-                System.out.printf("Customer %d has been picked up\n", succession.get(i).id);
                 fillArrivalAndTravelTimes(i);
                 collectedCustomers.remove(succession.get(i));
             } else{
-                System.out.printf("Customer %d has NOT been picked up\n", succession.get(i).id);
                 collectedCustomers.add(succession.get(i));
-                System.out.printf("Customer %d has been added to the collectedCustomers list\n", succession.get(i).id);
                 Customer currentCustomer = succession.get(i);
                 if (i==0){
-                    System.out.printf("Customer %d is the first passenger, wait time 0\n", succession.get(i).id);
                     currentCustomer.pickupTime = currentCustomer.timeWindow[0];
                     currentCustomer.waitTime = 0;
                 } else{
@@ -69,7 +81,6 @@ public class Route {
                     } else{ // if previous customer was dropped off
                         collectedCustomers.add(previousCustomer);
                         double timeToCustomer = previousCustomer.distance(true, currentCustomer);
-                        System.out.println(previousCustomer.id);
                         DateTime timeOfArrival = previousCustomer.dropoffTime.plusMinutes((int)(timeToCustomer/vehicle.averageSpeed));
                         if (timeOfArrival.isBefore(currentCustomer.timeWindow[0]))
                         {
