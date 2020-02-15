@@ -50,24 +50,54 @@ public class SubGraph{
     }
 
     public int getActualTravelDistance(Vertex endVertex){
+        // get the actual distance travelled from one customer's pickup point to their drop-off point
         String[] splitId = endVertex.id.split("(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)");
-        Vertex currentVertex = vertexMap.get(splitId[0]);
+        String pickupVertex = splitId[0]+"a";
+        Vertex currentVertex = vertexMap.get(pickupVertex);
         int totalDistance = 0;
-        while (getNextVertex(currentVertex) != outgoingEdges.get(endVertex).get(0).toVertex){
+        while (currentVertex != endVertex){
             Vertex nextVertex = getNextVertex(currentVertex);
+            //System.out.printf("Current: %s, End: %s\n", currentVertex.id, endVertex.id);
+            //System.out.println(outgoingEdges.get(currentVertex).get(0).weight);
+            //System.out.println(currentVertex.id);
+            //System.out.println(outgoingEdges.get(currentVertex));
+            if (outgoingEdges.get(currentVertex).size() == 0) break;
             totalDistance += outgoingEdges.get(currentVertex).get(0).weight;
+            currentVertex = nextVertex;
         }
-        return totalDistance;
+        return totalDistance*50;
+    }
+
+    public int getSize(){
+        size = 1;
+        Vertex current = head;
+        while (getNextVertex(current) != null){
+            current = getNextVertex(current);
+            size ++;
+        }
+        return size;
     }
 
     public Vertex get(int index){
         int counter = 0;
         Vertex currentVertex = head;
-        while (counter <= index){
-            currentVertex = outgoingEdges.get(currentVertex).get(0).toVertex;
+        while (counter < index){
+            currentVertex = getNextVertex(currentVertex);
             counter ++;
         }
         return currentVertex;
+    }
+
+    public Vertex getPreviousVertex(Vertex v){
+        Vertex currentVertex = head;
+        if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
+        while (getNextVertex(currentVertex) != null){
+            currentVertex = getNextVertex(currentVertex);
+            System.out.println(currentVertex.id);
+            if (outgoingEdges.get(currentVertex).get(0) == null) return null;
+            if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
+        }
+        return null;
     }
 
     public void removeVertex(Customer customer, Boolean isPickup){
@@ -76,23 +106,32 @@ public class SubGraph{
         outgoingEdges.remove(new Vertex(customer, isPickup));
     }
 
-    public void addEdge(Vertex v1, Vertex v2){
+    public Edge addEdge(Vertex v1, Vertex v2){
         Edge e = new Edge(v1, v2, v1.getWeight(v2));
+        //System.out.printf("Edge cost: %d\n", v1.getWeight(v2));
         outgoingEdges.get(v1).add(e);
+        //System.out.println(outgoingEdges.get(v1).get(0).weight);
+        return e;
     }
 
-    public void addEdge(String id1, String id2){
+    public Edge addEdge(String id1, String id2){
         Vertex v1 = vertexMap.get(id1);
         Vertex v2 = vertexMap.get(id2);
         Edge e = new Edge(v1, v2, v1.getWeight(v2));
         outgoingEdges.get(v1).add(e);
+        return e;
     }
 
-    public void removeEdge(Customer customer1, Boolean isPickup1, Customer customer2, Boolean isPickup2){
-        Vertex v1 = new Vertex(customer1, isPickup1);
-        Vertex v2 = new Vertex(customer2, isPickup2);
+    public Edge removeEdge(String id1, String id2){
+        Vertex v1 = vertexMap.get(id1);
+        Vertex v2 = vertexMap.get(id2);
         List<Edge> outgoingEdge = outgoingEdges.get(v1);
-        if (outgoingEdge != null) outgoingEdge.remove(v2);
+        if (outgoingEdge != null){
+            Edge e = outgoingEdge.get(0);
+            outgoingEdge.remove(0);
+            return e;
+        }
+        return null;
     }
 
     public double distance(Vertex v1, Vertex v2){
@@ -125,7 +164,8 @@ public class SubGraph{
 
     }
 
-    public void fillRoutes(Route route){
+    public void fillRoutes(Route newRoute){
+        route = newRoute;
         serviceTime = Math.abs(Minutes.minutesBetween(route.getBeginningOfService(), route.getEndOfService()).getMinutes());
         Vertex previousVertex;
         Vertex currentVertex;
@@ -140,22 +180,89 @@ public class SubGraph{
                 currentVertex = addVertex(currentCustomer, false);
                 collectedCustomers.remove(currentCustomer);
                 if (collectedCustomers.contains(previousCustomer)){
-                    addEdge(previousVertex, currentVertex);
+                    Edge e = addEdge(previousVertex, currentVertex);
+                    //System.out.printf("Added edge: Cost %d", e.weight);
                 } else{
-                    addEdge(previousVertex, currentVertex);
+                    Edge e = addEdge(previousVertex, currentVertex);
+                    //System.out.printf("Added edge: Cost %d", e.weight);
                 }
             } else{
                 currentVertex = addVertex(currentCustomer, true);
                 collectedCustomers.add(currentCustomer);
                 if (collectedCustomers.contains(previousCustomer)){
-                    addEdge(previousVertex, currentVertex);
+                    Edge e = addEdge(previousVertex, currentVertex);
+                    //System.out.printf("Added edge: Cost %d", e.weight);
                 } else{
-                    addEdge(previousVertex, currentVertex);
+                    Edge e = addEdge(previousVertex, currentVertex);
+                    //System.out.printf("Added edge: Cost %d", e.weight);
                 }
             }
             previousVertex = currentVertex;
             if (i == route.succession.size()-1) tail = currentVertex;
         }
+    }
+
+    public Route adjustRoute(){
+        List<Customer> newPassengerList = new ArrayList<>();
+        //loop through sub-graph and add each item into newPassengerList in new order
+        Vertex current = head;
+        newPassengerList.add(current.customer);
+        while (getNextVertex(current) != null){
+            current = getNextVertex(current);
+            //System.out.printf("Adding customer %d\n", current.customer.id);
+            newPassengerList.add(current.customer);
+        }
+        //System.out.println(route.id);
+        route.succession = newPassengerList;
+        route.generateRoute();
+        return route;
+    }
+
+    public Vertex[] removePassenger(int i, int j){
+        /*
+         * remove a passenger from the list and return the 2 vertices
+         * i is the passengers pickup index
+         * j is the passengers drop-off index
+         */
+        Boolean startVertex = false;
+        Boolean endVertex = false;
+
+        Vertex jVertex = get(j);
+        Vertex previousVertexJ = getPreviousVertex(jVertex);
+        if (previousVertexJ == null){
+            startVertex = true;
+        }
+        Vertex nextVertexJ = getNextVertex(jVertex);
+        if (nextVertexJ == null){
+            endVertex = true;
+        } else{
+            Edge eJ = removeEdge(jVertex.id, nextVertexJ.id);
+        }
+        if (!startVertex) {
+            removeEdge(previousVertexJ.id, jVertex.id);
+            if (!endVertex) addEdge(previousVertexJ, nextVertexJ);
+        }
+
+        startVertex = false;
+        endVertex = false;
+        Vertex iVertex = get(i);
+        Vertex previousVertexI = getPreviousVertex(iVertex);
+        if (previousVertexI == null){
+            startVertex = true;
+        }
+        Vertex nextVertexI = getNextVertex(iVertex);
+        if (nextVertexI == null){
+            endVertex = true;
+        } else {
+            Edge eI = removeEdge(iVertex.id, nextVertexI.id);
+        }
+        if (!startVertex) {
+            removeEdge(previousVertexI.id, iVertex.id);
+            if (!endVertex) addEdge(previousVertexI, nextVertexI);
+        }
+
+        System.out.printf("Customer %d has been removed from route %d\n", iVertex.customer.id, route.id);
+        return new Vertex[]{iVertex, jVertex};
     }
 
     public String printGraph(){
@@ -179,6 +286,12 @@ public class SubGraph{
             }
             current = nextVertex;
         }
+/*
+        for (List<Edge> value : outgoingEdges.values()){
+            System.out.printf("Vertex %s to Vertex %s: %d\n", value.get(0).fromVertex.id, value.get(0).toVertex.id, value.get(0).weight);
+        }
+
+ */
         return message;
     }
 

@@ -3,7 +3,7 @@ public class Edge {
     Vertex toVertex;
     int weight;
 
-    public Edge(Vertex fromVertex, Vertex toVertex, int Weight){
+    public Edge(Vertex fromVertex, Vertex toVertex, int weight){
         this.fromVertex = fromVertex;
         this.toVertex = toVertex;
         this.weight = weight;

@@ -90,11 +90,11 @@ public class Graph {
             if (collectedCustomers.contains(previousCustomer)){
                 previousVertex = vertexMap.get(getVertexId(previousCustomer, true));
                 addEdge(previousVertex, currentVertex);
-                sg.addEdge(previousVertex.id, currentVertex.id);
+                Edge e = sg.addEdge(previousVertex.id, currentVertex.id);
             } else{
                 previousVertex = vertexMap.get(getVertexId(previousCustomer, false));
                 addEdge(previousVertex, currentVertex);
-                sg.addEdge(previousVertex.id, currentVertex.id);
+                Edge e = sg.addEdge(previousVertex.id, currentVertex.id);
             }
             if (i == route.succession.size()-1) sg.tail = currentVertex;
         }
