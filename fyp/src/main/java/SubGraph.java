@@ -2,12 +2,13 @@ import org.joda.time.Minutes;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SubGraph{
+public class SubGraph implements Serializable {
     Vertex head;
     Vertex tail;
     Route route;
@@ -17,11 +18,20 @@ public class SubGraph{
     Vertex firstVertex;
     int serviceTime;
     int size;
+    double cost;
 
     public SubGraph(int id){
         this.id = id;
         outgoingEdges = new HashMap<>();
         vertexMap = new HashMap<>();
+    }
+
+    public SubGraph(int id, SubGraph other){
+        this.id = id;
+        this.outgoingEdges = other.outgoingEdges;
+        this.vertexMap = other.vertexMap;
+        this.head = other.head;
+        this.route = other.route;
     }
 
     public Vertex getVertex(Customer customer, Boolean isPickup){
@@ -78,6 +88,33 @@ public class SubGraph{
         return size;
     }
 
+    public double getCost(){
+        return getRouteCost();
+    }
+
+    public void setCost(){
+        this.cost = getRouteCost();
+    }
+
+    public double getRouteCost(){
+        double costPerKm = 1.5;
+        double distanceTravelled = 0;
+        Vertex current = head;
+        distanceTravelled += current.customer.distance(route.vehicle.startPoint);
+        while (getNextVertex(current) != null) {
+            current = getNextVertex(current);
+            if (outgoingEdges.get(current).size() == 0){
+                distanceTravelled += current.customer.distance(true, route.vehicle.startPoint);
+            } else{
+                distanceTravelled += outgoingEdges.get(current).get(0).weight;
+            }
+
+        }
+
+
+        return costPerKm*distanceTravelled;
+    }
+
     public Vertex get(int index){
         int counter = 0;
         Vertex currentVertex = head;
@@ -90,14 +127,27 @@ public class SubGraph{
 
     public Vertex getPreviousVertex(Vertex v){
         Vertex currentVertex = head;
-        if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
+        if (currentVertex.id.equals(v.id)) return null;
+        if (getNextVertex(currentVertex).id.equals(v.id)) return  currentVertex;
         while (getNextVertex(currentVertex) != null){
             currentVertex = getNextVertex(currentVertex);
-            System.out.println(currentVertex.id);
-            if (outgoingEdges.get(currentVertex).get(0) == null) return null;
-            if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
+            //System.out.println(currentVertex.id);
+            //if (outgoingEdges.get(currentVertex).get(0) == null) return null;
+            //if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
+            if (getNextVertex(currentVertex).id.equals(v.id)) return  currentVertex;
         }
         return null;
+    }
+
+    public void removeVertex(Vertex v){
+        Vertex previousVertex = getPreviousVertex(v);
+        Vertex nextVertex = getNextVertex(v);
+        System.out.println(previousVertex.id);
+        System.out.println(v.id);
+        removeEdge(previousVertex.id, v.id);
+        outgoingEdges.remove(v);
+        vertexMap.remove(v.id);
+        addEdge(previousVertex, nextVertex);
     }
 
     public void removeVertex(Customer customer, Boolean isPickup){
@@ -125,6 +175,7 @@ public class SubGraph{
     public Edge removeEdge(String id1, String id2){
         Vertex v1 = vertexMap.get(id1);
         Vertex v2 = vertexMap.get(id2);
+        //System.out.printf("Removing edge between %s and %s\n", v1.id, v2.id);
         List<Edge> outgoingEdge = outgoingEdges.get(v1);
         if (outgoingEdge != null){
             Edge e = outgoingEdge.get(0);
@@ -145,6 +196,7 @@ public class SubGraph{
     }
 
     public Vertex getNextVertex(Vertex v){
+        //System.out.println(v.id);
         if (outgoingEdges.get(v).size() == 0){
             return null;
         } else {
@@ -228,40 +280,54 @@ public class SubGraph{
         Boolean endVertex = false;
 
         Vertex jVertex = get(j);
+        //System.out.printf("J vertex: %s\n", jVertex.id);
         Vertex previousVertexJ = getPreviousVertex(jVertex);
         if (previousVertexJ == null){
             startVertex = true;
-        }
+        } //else System.out.printf("Previous: %s\n", previousVertexJ.id);
         Vertex nextVertexJ = getNextVertex(jVertex);
+
         if (nextVertexJ == null){
             endVertex = true;
         } else{
+            //System.out.printf("Next vertex: %s", nextVertexJ.id);
+            //remove edge between jVertex and the next one
             Edge eJ = removeEdge(jVertex.id, nextVertexJ.id);
         }
         if (!startVertex) {
+            // if J isn't the first vertex, remove edge between J and prev
             removeEdge(previousVertexJ.id, jVertex.id);
-            if (!endVertex) addEdge(previousVertexJ, nextVertexJ);
-        }
+            // if J isn't the end vertex then add edge between J and next vertex
+            if (!endVertex){
+                //System.out.printf("Adding edge between %s and %s\n", previousVertexJ.id, nextVertexJ.id);
+                addEdge(previousVertexJ, nextVertexJ);
+            }
+        } else head = nextVertexJ;
 
         startVertex = false;
         endVertex = false;
         Vertex iVertex = get(i);
+        //System.out.printf("I vertex: %s\n", iVertex.id);
         Vertex previousVertexI = getPreviousVertex(iVertex);
         if (previousVertexI == null){
             startVertex = true;
-        }
+        } //else System.out.printf("Previous: %s\n", previousVertexI.id);
         Vertex nextVertexI = getNextVertex(iVertex);
         if (nextVertexI == null){
             endVertex = true;
         } else {
+            //System.out.printf("Next: %s\n", nextVertexI.id);
             Edge eI = removeEdge(iVertex.id, nextVertexI.id);
         }
         if (!startVertex) {
             removeEdge(previousVertexI.id, iVertex.id);
-            if (!endVertex) addEdge(previousVertexI, nextVertexI);
-        }
+            if (!endVertex){
+                //System.out.printf("Adding edge between %s and %s\n", previousVertexI.id, nextVertexI.id);
+                addEdge(previousVertexI, nextVertexI);
+            }
+        } else head = nextVertexI;
 
-        System.out.printf("Customer %d has been removed from route %d\n", iVertex.customer.id, route.id);
+        //System.out.printf("Customer %d has been removed from route %d\n", iVertex.customer.id, route.id);
         return new Vertex[]{iVertex, jVertex};
     }
 
@@ -298,7 +364,7 @@ public class SubGraph{
     public static void main(String[] args){
         SubGraph sg = new SubGraph(1);
         Scheduler scheduler = new Scheduler();
-        List<Customer> customers = scheduler.parseCustomers();
+        List<Customer> customers = scheduler.parseCustomers("customers.csv");
         Customer firstCustomer = customers.get(0);
         Vertex v1 = sg.addVertex(customers.get(0), true);
         Vertex v2 = sg.getVertex(firstCustomer, true);

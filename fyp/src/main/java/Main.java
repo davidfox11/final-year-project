@@ -1,14 +1,14 @@
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args){
-        int a = 5;
-        int b = a;
-        b += 7;
-        System.out.println(a);
+    public static void main(String[] args) throws ParseException, IOException {
         Scheduler scheduler = new Scheduler();
+        GenerateCustomers generator = new GenerateCustomers("customers1.csv", 100);
+        generator.generate();
         scheduler.vehicles = scheduler.populateFleet(5);
-        scheduler.customers = scheduler.parseCustomers();
+        scheduler.customers = scheduler.parseCustomers("customers1.csv");
 
 
         /*
@@ -29,23 +29,18 @@ public class Main {
             SubGraph sg = graph.createSubGraph(routes.get(i));
             sg.fillRoutes(routes.get(i));
             graph.routes.add(sg);
+            if (sg.outgoingEdges.get(sg.get(sg.getSize()-2)).get(0) == null) System.out.println("It's a null");
         }
 
 /*
-        SubGraph testGraph = graph.routes.get(0);
-        System.out.println(testGraph.printGraph());
-        scheduler.swapEdges(testGraph, 2, 6);
-        Route r = testGraph.adjustRoute();
-        testGraph.fillRoutes(r);
-        System.out.println(testGraph.printGraph());
-
- */
-/*
+        // FOR TESTING TWO-OPT SEARCH
 
         SubGraph testGraph = graph.routes.get(0);
         System.out.println(testGraph.printGraph());
         System.out.println(testGraph.getSize());
         System.out.println("Score: " + scheduler.score(testGraph));
+        System.out.println("Cost: " + testGraph.getCost());
+
 
 
         SubGraph newTestGraph = scheduler.twoOptSearchAlt(testGraph);
@@ -55,34 +50,44 @@ public class Main {
         System.out.println(newTestGraph.printGraph());
 
         System.out.println("Score: " + scheduler.score(newTestGraph));
+        System.out.println("Cost: " + newTestGraph.getCost());
+*/
 
- */
 
+        scheduler.printJourney(graph.routes);
 
-
-        System.out.println();
-        for (SubGraph graphRoute : graph.routes) {
-            System.out.println(graphRoute.printGraph());
-            System.out.println("Score: " + scheduler.score(graphRoute));
-            System.out.println();
-            System.out.println("Checking for null edges");
-
+/*
+        List<SubGraph> updatedRoutes = new ArrayList<>();
+        System.out.println("Initializing two-opt search...");
+        for (SubGraph sg : graph.routes){
+            System.out.printf("Optimising route number %d...\n\n", sg.id);
+            SubGraph newGraph = scheduler.twoOptSearchAlt(sg);
+            Route r = newGraph.adjustRoute();
+            newGraph.fillRoutes(r);
+            updatedRoutes.add(newGraph);
         }
-        System.out.println("Average Score: "+scheduler.getAverageRouteScore(graph.routes));
+
+        System.out.println("UPDATED ROUTES");
+        for (SubGraph sg : updatedRoutes){
+            System.out.println(sg.printGraph());
+            System.out.println("Score: " + scheduler.score(sg));
+            System.out.println("Cost: " + sg.getCost());
+            System.out.println();
+        }
+
+        System.out.println("Journey cost: " + scheduler.getTotalJourneyCost(updatedRoutes));
+
         System.out.println("\n\nNote: The following customers were not allocated to any vehicles ->");
         for (Customer customer : scheduler.discardList){
             System.out.println("Customer " + customer.id);
         }
+ */
 
-        List<SubGraph> newGraphRoutes = scheduler.swapBetweenRoutes(graph.routes);
-        System.out.println("UPDATED GRAPHS");
-        for (SubGraph graphRoute : newGraphRoutes) {
-            System.out.println(graphRoute.printGraph());
-            System.out.println("Score: " + scheduler.score(graphRoute));
-            System.out.println();
-        }
-        System.out.println("Average Score: "+scheduler.getAverageRouteScore(graph.routes));
 
+        //List<SubGraph> newGraphRoutes = scheduler.swapBetweenRoutes(graph.routes);
+        //List<SubGraph> newGraphRoutes = scheduler.interRouteDiscardSwap(graph.routes, 5);
+
+        //scheduler.realTimeInsertion(graph.routes);
 
 
 

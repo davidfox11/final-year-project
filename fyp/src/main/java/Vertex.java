@@ -1,4 +1,6 @@
-public class Vertex {
+import java.io.Serializable;
+
+public class Vertex implements Serializable {
     String id;
     Customer customer;
     Boolean isPickup;
@@ -26,7 +28,7 @@ public class Vertex {
     }
 
     public int getWeight(Vertex vertex){
-        return Math.abs(Math.abs(location[0]-vertex.location[0]) + Math.abs(location[1]-vertex.location[1]))/50;
+        return Math.abs(Math.abs(location[0]-vertex.location[0]) + Math.abs(location[1]-vertex.location[1]))/20;
     }
 
     public Boolean equals(Vertex v){

@@ -3,10 +3,11 @@ import org.joda.time.Minutes;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Route {
+public class Route implements Serializable {
     int id;
     List<Customer> succession;
     Vehicle vehicle;
@@ -102,23 +103,21 @@ public class Route {
         if (collectedCustomers.contains(previousCustomer)){ // if previous customer was picked up
             double timeToCustomer = previousCustomer.distance(currentCustomer.endPoint);
             DateTime timeOfArrival = previousCustomer.pickupTime.plusMinutes((int)(timeToCustomer/vehicle.averageSpeed));
+            currentCustomer.dropoffTime= timeOfArrival;
+            /*
             if (timeOfArrival.isBefore(currentCustomer.timeWindow[1]))
             {
                 currentCustomer.dropoffTime = currentCustomer.timeWindow[1];
             } else{
                 currentCustomer.dropoffTime= timeOfArrival;
             }
+             */
             currentCustomer.travelTime = Math.abs(Minutes.minutesBetween(timeOfArrival, currentCustomer.pickupTime).getMinutes());
         } else { // if previous customer was dropped off
             collectedCustomers.add(previousCustomer);
             double timeToCustomer = previousCustomer.distance(true, currentCustomer.endPoint);
             DateTime timeOfArrival = previousCustomer.dropoffTime.plusMinutes((int)(timeToCustomer/vehicle.averageSpeed));
-            if (timeOfArrival.isBefore(currentCustomer.timeWindow[1]))
-            {
-                currentCustomer.dropoffTime = currentCustomer.timeWindow[1];
-            } else{
-                currentCustomer.dropoffTime = timeOfArrival;
-            }
+            currentCustomer.dropoffTime= timeOfArrival;
             currentCustomer.travelTime = Math.abs(Minutes.minutesBetween(timeOfArrival, currentCustomer.pickupTime).getMinutes());
         }
     }
@@ -127,6 +126,41 @@ public class Route {
         getBeginningOfService();
         getEndOfService();
         fillDepartureAndWaitTimes();
+    }
+
+    public double getCost(){
+        double distanceTravelled = succession.get(0).distance(vehicle.startPoint);
+        List<Customer> collectedCustomers = new ArrayList<>();
+        for (int i=0; i<succession.size(); i++){
+            Customer customer = succession.get(i);
+            if (i == 0) distanceTravelled += customer.distance(vehicle.startPoint);
+            else if (succession.get(i+1) == null){
+                distanceTravelled += customer.distance(true, vehicle.startPoint);
+            } else{
+                Customer previousCustomer = succession.get(i-1);
+                if (collectedCustomers.contains(customer)){
+                    if (collectedCustomers.contains(previousCustomer)){
+                        // previous was picked up
+                        distanceTravelled += previousCustomer.distance(customer.endPoint);
+                    } else{
+                        // previous was dropped off
+                        distanceTravelled += previousCustomer.distance(true, customer.endPoint);
+                    }
+                    collectedCustomers.remove(i);
+                    i --;
+                } else{
+                    if (collectedCustomers.contains(previousCustomer)){
+                        distanceTravelled += previousCustomer.distance(customer);
+                    } else{
+                        distanceTravelled += previousCustomer.distance(true, customer.endPoint);
+                    }
+                    collectedCustomers.add(customer);
+                }
+            }
+        }
+
+        double cost = distanceTravelled*1.5;
+        return cost;
     }
 
     public String printRoute(){

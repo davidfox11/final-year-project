@@ -2,12 +2,13 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
 
-public class Customer {
+public class Customer implements Serializable, Comparable<Customer> {
     /*
     * Customer Class
     * Represent customers with the following parameters:
@@ -78,6 +79,11 @@ public class Customer {
     public int randomPriority(int low, int high){
         Random r = new Random();
         return r.nextInt((high - low) + 1) + low;
+    }
+
+    @Override
+    public int compareTo(Customer c){
+        return pickupTime.compareTo(c.pickupTime);
     }
 
     public String printCustomer(){
