@@ -6,5 +6,7 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="commons-lang3-3" level="project" />
+    <orderEntry type="library" exported="" name="joda-time-2.10.5" level="project" />
   </component>
 </module>

@@ -1,0 +1,512 @@
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 30 orders from customers1.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 5736.6
+Final cost: 4577.40
+Customer Satisfaction: 0.80
+Total of 10 improvements after 1723 iterations
+Average time for each iteration: 0.17 seconds
+Inserted 15 real-time customers
+Overall cost: 5106.60
+Overall satisfaction 0.65
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 30 orders from customers1.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6823246413717002
+Final cost: 6853.80
+Customer Satisfaction: 0.87
+Total of 21 improvements after 1793 iterations
+Average time for each iteration: 0.17 seconds
+Inserted 15 real-time customers
+Overall cost: 29406.60
+Overall satisfaction 0.85
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers2.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 3738.6
+Final cost: 784.80
+Customer Satisfaction: 0.68
+Total of 6 improvements after 469 iterations
+Average time for each iteration: 0.64 seconds
+Inserted 20 real-time customers
+Overall cost: 3820.80
+Overall satisfaction 0.82
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers2.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6530152725677527
+Final cost: 3185.40
+Customer Satisfaction: 0.84
+Total of 12 improvements after 491 iterations
+Average time for each iteration: 0.61 seconds
+Inserted 20 real-time customers
+Overall cost: 4555.20
+Overall satisfaction 0.81
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 60 orders from customers3.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 4064.4
+Final cost: 1004.40
+Customer Satisfaction: 0.63
+Total of 8 improvements after 168 iterations
+Average time for each iteration: 1.80 seconds
+Inserted 30 real-time customers
+Overall cost: 5567.10
+Overall satisfaction 0.55
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 60 orders from customers3.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6632828187036548
+Final cost: 2392.20
+Customer Satisfaction: 0.84
+Total of 14 improvements after 178 iterations
+Average time for each iteration: 1.69 seconds
+Inserted 30 real-time customers
+Overall cost: 8083.20
+Overall satisfaction 0.81
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 70 orders from customers4.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 3891.6000000000004
+Final cost: 2543.40
+Customer Satisfaction: 0.83
+Total of 5 improvements after 126 iterations
+Average time for each iteration: 2.40 seconds
+Inserted 35 real-time customers
+Overall cost: 9287.70
+Overall satisfaction 0.62
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 70 orders from customers4.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6653673098208487
+Final cost: 8654.10
+Customer Satisfaction: 0.84
+Total of 8 improvements after 120 iterations
+Average time for each iteration: 2.50 seconds
+Inserted 35 real-time customers
+Overall cost: 6531.90
+Overall satisfaction 0.81
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers5.csv
+Time window: Max Time window: 2 Sparsity: 1
+Initial cost: 4717.8
+Final cost: 838.80
+Customer Satisfaction: 0.66
+Total of 7 improvements after 592 iterations
+Average time for each iteration: 0.51 seconds
+Inserted 20 real-time customers
+Overall cost: 3201.90
+Overall satisfaction 0.81
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers5.csv
+Time window: Max Time window: 2 Sparsity: 1
+Initial Customer Satisfaction: 0.6581552864628757
+Final cost: 3931.20
+Customer Satisfaction: 0.84
+Total of 13 improvements after 620 iterations
+Average time for each iteration: 0.48 seconds
+Inserted 20 real-time customers
+Overall cost: 2091.60
+Overall satisfaction 0.77
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers6.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 2185.2000000000003
+Final cost: 585.00
+Customer Satisfaction: 0.67
+Total of 7 improvements after 218 iterations
+Average time for each iteration: 33.81 seconds
+Inserted 20 real-time customers
+Overall cost: 3156.30
+Overall satisfaction 0.63
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers6.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6520665684831087
+Final cost: 2977.20
+Customer Satisfaction: 0.84
+Total of 10 improvements after 8 iterations
+Average time for each iteration: 450.25 seconds
+Inserted 20 real-time customers
+Overall cost: 2253.60
+Overall satisfaction 0.80
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers7.csv
+Time window: Max Time window: 4 Sparsity: 3
+Initial cost: 3294.0
+Final cost: 2052.00
+Customer Satisfaction: 0.73
+Total of 3 improvements after 5 iterations
+Average time for each iteration: 1441.60 seconds
+Inserted 20 real-time customers
+Overall cost: 2828.10
+Overall satisfaction 0.69
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers7.csv
+Time window: Max Time window: 4 Sparsity: 3
+Initial Customer Satisfaction: 0.671081374099309
+Final cost: 3847.20
+Customer Satisfaction: 0.85
+Total of 9 improvements after 256 iterations
+Average time for each iteration: 1.18 seconds
+Inserted 20 real-time customers
+Overall cost: 3716.10
+Overall satisfaction 0.83
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers8.csv
+Time window: Max Time window: 5 Sparsity: 4
+Initial cost: 2151.0
+Final cost: 1396.80
+Customer Satisfaction: 0.66
+Total of 3 improvements after 28 iterations
+Average time for each iteration: 258.68 seconds
+Inserted 20 real-time customers
+Overall cost: 2428.20
+Overall satisfaction 0.60
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers8.csv
+Time window: Max Time window: 5 Sparsity: 4
+Initial Customer Satisfaction: 0.6604952367619288
+Final cost: 3047.40
+Customer Satisfaction: 0.81
+Total of 4 improvements after 3 iterations
+Average time for each iteration: 1201.67 seconds
+Inserted 20 real-time customers
+Overall cost: 2797.20
+Overall satisfaction 0.80
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers9.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 3238.2000000000003
+Final cost: 1834.20
+Customer Satisfaction: 0.81
+Total of 5 improvements after 6 iterations
+Average time for each iteration: 169.67 seconds
+Inserted 20 real-time customers
+Overall cost: 1834.20
+Overall satisfaction 0.81
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers9.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6625957816340396
+Final cost: 1893.60
+Customer Satisfaction: 0.85
+Total of 12 improvements after 315 iterations
+Average time for each iteration: 0.95 seconds
+Inserted 20 real-time customers
+Overall cost: 1825.20
+Overall satisfaction 0.81
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 4
+Customer orders: 40 orders from customers10.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 2932.2
+Final cost: 1098.00
+Customer Satisfaction: 0.66
+Total of 6 improvements after 333 iterations
+Average time for each iteration: 0.91 seconds
+Inserted 20 real-time customers
+Overall cost: 5519.10
+Overall satisfaction 0.58
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 4
+Customer orders: 40 orders from customers10.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.661346737864009
+Final cost: 4120.20
+Customer Satisfaction: 0.85
+Total of 9 improvements after 331 iterations
+Average time for each iteration: 0.91 seconds
+Inserted 20 real-time customers
+Overall cost: 4329.90
+Overall satisfaction 0.83
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 3
+Customer orders: 40 orders from customers11.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 3571.2
+Final cost: 1479.60
+Customer Satisfaction: 0.74
+Total of 10 improvements after 668 iterations
+Average time for each iteration: 0.45 seconds
+Inserted 20 real-time customers
+Overall cost: 3351.60
+Overall satisfaction 0.83
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 3
+Customer orders: 40 orders from customers11.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6668429846447885
+Final cost: 4242.30
+Customer Satisfaction: 0.86
+Total of 16 improvements after 708 iterations
+Average time for each iteration: 0.42 seconds
+Inserted 20 real-time customers
+Overall cost: 3236.40
+Overall satisfaction 0.83
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 2
+Customer orders: 40 orders from customers12.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 2659.5
+Final cost: 1454.70
+Customer Satisfaction: 0.65
+Total of 6 improvements after 332 iterations
+Average time for each iteration: 16.09 seconds
+Inserted 20 real-time customers
+Overall cost: 6026.40
+Overall satisfaction 0.71
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 2
+Customer orders: 40 orders from customers12.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.672457127174957
+Final cost: 7350.30
+Customer Satisfaction: 0.86
+Total of 15 improvements after 568 iterations
+Average time for each iteration: 0.53 seconds
+Inserted 20 real-time customers
+Overall cost: 35951.70
+Overall satisfaction 0.65
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers13.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 2835.0
+Final cost: 1830.60
+Customer Satisfaction: 0.71
+Total of 6 improvements after 292 iterations
+Average time for each iteration: 1.04 seconds
+Inserted 20 real-time customers
+Overall cost: 8834.70
+Overall satisfaction 0.82
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 40 orders from customers13.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6679721978781381
+Final cost: 2971.80
+Customer Satisfaction: 0.85
+Total of 14 improvements after 288 iterations
+Average time for each iteration: 1.05 seconds
+Inserted 20 real-time customers
+Overall cost: 4746.30
+Overall satisfaction 0.82
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 8
+Number of Vehicles: 5
+Customer orders: 40 orders from customers14.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 1975.1999999999998
+Final cost: 741.60
+Customer Satisfaction: 0.67
+Total of 6 improvements after 530 iterations
+Average time for each iteration: 0.57 seconds
+Inserted 20 real-time customers
+Overall cost: 4791.90
+Overall satisfaction 0.84
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 8
+Number of Vehicles: 5
+Customer orders: 40 orders from customers14.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6611204612128276
+Final cost: 5876.70
+Customer Satisfaction: 0.85
+Total of 10 improvements after 506 iterations
+Average time for each iteration: 0.59 seconds
+Inserted 20 real-time customers
+Overall cost: 5983.80
+Overall satisfaction 0.82
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 10
+Number of Vehicles: 5
+Customer orders: 40 orders from customers15.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 9732.0
+Final cost: 3831.00
+Customer Satisfaction: 0.73
+Total of 6 improvements after 372 iterations
+Average time for each iteration: 0.81 seconds
+Inserted 20 real-time customers
+Overall cost: 5193.00
+Overall satisfaction 0.62
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 10
+Number of Vehicles: 5
+Customer orders: 40 orders from customers15.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6672579285774138
+Final cost: 5911.50
+Customer Satisfaction: 0.85
+Total of 12 improvements after 424 iterations
+Average time for each iteration: 0.71 seconds
+Inserted 20 real-time customers
+Overall cost: 35167.50
+Overall satisfaction 0.82
+************************************************************
+
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 5
+Vehicle Size: 12
+Number of Vehicles: 5
+Customer orders: 40 orders from customers16.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 3517.2
+Final cost: 1792.80
+Customer Satisfaction: 0.67
+Total of 3 improvements after 216 iterations
+Average time for each iteration: 1.39 seconds
+Inserted 20 real-time customers
+Overall cost: 3561.60
+Overall satisfaction 0.82
+************************************************************
+NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
+Number of iterations: 5
+Vehicle Size: 12
+Number of Vehicles: 5
+Customer orders: 40 orders from customers16.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial Customer Satisfaction: 0.6606525040576898
+Final cost: 5587.20
+Customer Satisfaction: 0.84
+Total of 10 improvements after 215 iterations
+Average time for each iteration: 1.40 seconds
+Inserted 20 real-time customers
+Overall cost: 3733.20
+Overall satisfaction 0.80
+************************************************************
+
