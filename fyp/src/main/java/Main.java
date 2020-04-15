@@ -1,92 +1,41 @@
-import java.util.List;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.ParseException;
 
 public class Main {
-    public static void main(String[] args){
-        int a = 5;
-        int b = a;
-        b += 7;
-        System.out.println(a);
-        Scheduler scheduler = new Scheduler();
-        scheduler.vehicles = scheduler.populateFleet(5);
-        scheduler.customers = scheduler.parseCustomers();
+
+    public static void printProgress(int iterations, int n){
+        int progressDashes = 100;
+        double percentage = (iterations)*100/n;
+        int hashes = 0;
+        int hashBars = (int)percentage;
+        int dashes = 100-hashBars;
+        String strDashes = "-".repeat(dashes);
+        //System.out.println(strDashes);
+        String strHashes = "#".repeat(hashBars);
+        //System.out.println(strHashes);
+
+        System.out.printf("<%s%s> %.2f%s \r", strHashes, strDashes, percentage, "%");
 
 
+    }
+
+    public static void main(String[] args) throws ParseException, IOException {
+        run("../tests/test2a.txt");
+    }
+
+    public static void run(String resultsFile) throws ParseException, IOException {
+        FileWriter fr = new FileWriter(new File(resultsFile));
+        BufferedWriter br = new BufferedWriter(fr);
         /*
-        List<Vehicle> vehicles = scheduler.generateInitialSolution();
+        Scheduler scheduler = new Scheduler();
+        GenerateCustomers generator = new GenerateCustomers("../customers/customers1.csv", 50, 2, 1);
+        generator.generate();
+        scheduler.vehicles = scheduler.populateFleet(5, 5);
+        scheduler.customers = scheduler.parseCustomers("../customers/customers1.csv");
 
-
-        List<Route> routes = new ArrayList<>();
-        for (int i=0;i<vehicles.size();i++){
-            routes.add(scheduler.createRoute(i+1, vehicles.get(i)));
-        }
-         */
-
-        List<Route> routes = scheduler.generateSolution();
-
-        Graph graph = new Graph(scheduler.customers, scheduler.vehicles);
-        for (int i=0;i<routes.size();i++){
-            //System.out.println(routes.get(i).printRoute());
-            SubGraph sg = graph.createSubGraph(routes.get(i));
-            sg.fillRoutes(routes.get(i));
-            graph.routes.add(sg);
-        }
-
-/*
-        SubGraph testGraph = graph.routes.get(0);
-        System.out.println(testGraph.printGraph());
-        scheduler.swapEdges(testGraph, 2, 6);
-        Route r = testGraph.adjustRoute();
-        testGraph.fillRoutes(r);
-        System.out.println(testGraph.printGraph());
-
- */
-/*
-
-        SubGraph testGraph = graph.routes.get(0);
-        System.out.println(testGraph.printGraph());
-        System.out.println(testGraph.getSize());
-        System.out.println("Score: " + scheduler.score(testGraph));
-
-
-        SubGraph newTestGraph = scheduler.twoOptSearchAlt(testGraph);
-        Route r = newTestGraph.adjustRoute();
-        newTestGraph.fillRoutes(r);
-        System.out.println("\n\nUpdated graph:");
-        System.out.println(newTestGraph.printGraph());
-
-        System.out.println("Score: " + scheduler.score(newTestGraph));
-
- */
-
-
-
-        System.out.println();
-        for (SubGraph graphRoute : graph.routes) {
-            System.out.println(graphRoute.printGraph());
-            System.out.println("Score: " + scheduler.score(graphRoute));
-            System.out.println();
-            System.out.println("Checking for null edges");
-
-        }
-        System.out.println("Average Score: "+scheduler.getAverageRouteScore(graph.routes));
-        System.out.println("\n\nNote: The following customers were not allocated to any vehicles ->");
-        for (Customer customer : scheduler.discardList){
-            System.out.println("Customer " + customer.id);
-        }
-
-        List<SubGraph> newGraphRoutes = scheduler.swapBetweenRoutes(graph.routes);
-        System.out.println("UPDATED GRAPHS");
-        for (SubGraph graphRoute : newGraphRoutes) {
-            System.out.println(graphRoute.printGraph());
-            System.out.println("Score: " + scheduler.score(graphRoute));
-            System.out.println();
-        }
-        System.out.println("Average Score: "+scheduler.getAverageRouteScore(graph.routes));
-
-
-
-
-/*
         Plot myPlot = new Plot("Passenger Distribution",0,400,2,0,400,2);
         for (Customer customer : scheduler.customers){
             myPlot.setColor(scheduler.generateColor());
@@ -95,9 +44,61 @@ public class Main {
             myPlot.addPoint(customer.endPoint[0], customer.endPoint[1]);
             myPlot.setConnected(false);
         }
-*/
+         */
+
+        // Set experiment - 20 runs of 5 minutes each
+        int [][] changes = new int[][]{
+                // increasing customer size
+                new int[]{5, 0, 30, 5, 6, 3, 2},
+                new int[]{5, 0, 40, 5, 6, 3, 2},
+                new int[]{5, 0, 60, 5, 6, 3, 2},
+                new int[]{5, 0, 70, 5, 6, 3, 2},
+                // increasing time windows + sparsity
+                new int[]{5, 0, 40, 5, 6, 2, 1},
+                new int[]{5, 0, 40, 5, 6, 3, 2},
+                new int[]{5, 0, 40, 5, 6, 4, 3},
+                new int[]{5, 0, 40, 5, 6, 5, 4},
+                // reducing number of vehicles
+                new int[]{5, 0, 40, 5, 6, 3, 2},
+                new int[]{5, 0, 40, 4, 6, 3, 2},
+                new int[]{5, 0, 40, 3, 6, 3, 2},
+                new int[]{5, 0, 40, 2, 6, 3, 2},
+                // increasing vehicle capacity
+                new int[]{5, 0, 40, 5, 6, 3, 2},
+                new int[]{5, 0, 40, 5, 8, 3, 2},
+                new int[]{5, 0, 40, 5, 10, 3, 2},
+                new int[]{5, 0, 40, 5, 12, 3, 2},
+        };
+        printProgress(0, 32);
+        int progressCount = 1;
+        for (int i=0; i<16; i++){
+            String inputFile = String.format("customers%d.csv", i+1);
+            IteratedLocalSearch ils = new IteratedLocalSearch(changes[i][0], changes[i][1], inputFile, "../tests/test1.txt", changes[i][2], changes[i][3], changes[i][4], changes[i][5], changes[i][6]);
+            try{
+                //ils.optimiseCost();
+                //br.write(ils.costMsg);
+                //System.out.println(ils.costMsg);
+                printProgress(progressCount, 32);
+                progressCount ++;
+                br.write("");
+                ils.optimiseSatisfaction();
+                br.write(ils.satisfactionMsg);
+                System.out.println(ils.satisfactionMsg);
+                printProgress(progressCount, 32);
+                progressCount ++;
+                br.write("");
+            } catch (Exception e){
+                e.printStackTrace();
+                br.write("NPE. Next");
+                continue;
+            }
 
 
+
+        }
+
+        br.close();
+        fr.close();
 
     }
 }

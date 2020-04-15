@@ -1,3 +1,6 @@
+import org.apache.commons.lang3.SerializationUtils;
+import org.joda.time.DateTime;
+import org.joda.time.Minutes;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -14,6 +17,10 @@ public class Scheduler {
     List<Customer> customers;
     List<Vehicle> vehicles;
     List<Customer> discardList;
+    int twoOptComparisons;
+    int twoOptImprovements;
+    int interRouteImprovements;
+    List<SubGraph> interRouteSwapChanges = new ArrayList<>();
 
     public Scheduler(){
         discardList = new ArrayList<>();
@@ -68,59 +75,32 @@ public class Scheduler {
         // fill each vehicle
         for (int i=0;i<vehicles.size();i++){
             List<Customer> addAfterVehicleAssignment = new ArrayList<>();
-            System.out.println("Filling Vehicle " + vehicles.get(i).id);
+            //System.out.println("Filling Vehicle " + vehicles.get(i).id);
             vehicles.get(i).passengers = new ArrayList<>();
-            int availableSeats = vehicles.get(i).capacity;
-            System.out.println(availableSeats);
-            System.out.println(priorityQueue.size());
-            /*
-            while (availableSeats > 0){
-                if (priorityQueue.isEmpty()){
-                    System.out.println("BREAK");
-                    break;
-                }
-                // inserting a new customer
-                Customer nextCustomer = priorityQueue.poll();
-                System.out.println("Priority Queue size: " + priorityQueue.size());
-                List<Customer> newPassengerList = insertCustomer(nextCustomer, vehicles.get(i).passengers);
-                if (newPassengerList != null){
-                    vehicles.get(i).passengers = newPassengerList;
-                    availableSeats --;
-                    continue;
-                } else if (newPassengerList == null && i<vehicles.size()-1){
-                    System.out.printf("Customer %d not feasible. Placing back into priority queue with new priority %d\n", nextCustomer.id, nextCustomer.priority);
-                    nextCustomer.priority = nextCustomer.randomPriority(0, 100);
-                    if (!addAfterVehicleAssignment.contains(nextCustomer)){
-                        addAfterVehicleAssignment.add(nextCustomer);
-                    }
-                    continue;
-                } else {
-                    System.out.printf("Customer %d cannot be assigned to any vehicle. Adding to discard pile\n", nextCustomer.id);
-                    discardList.add(nextCustomer);
-                }
-            }
-             */
+
             while (!priorityQueue.isEmpty()){
                 Customer nextCustomer = priorityQueue.poll();
-                List<Customer> newPassengerList = insertCustomer(nextCustomer, vehicles.get(i).passengers);
+                List<Customer> newPassengerList = insertCustomer(nextCustomer, vehicles.get(i).passengers, vehicles.get(i).capacity);
                 if (newPassengerList != null){
                     vehicles.get(i).passengers = newPassengerList;
                     continue;
                 } else if (newPassengerList == null && i<vehicles.size()-1){
-                    System.out.printf("Customer %d not feasible. Placing back into priority queue with new priority %d\n", nextCustomer.id, nextCustomer.priority);
                     nextCustomer.priority = nextCustomer.randomPriority(0, 100);
+                    //System.out.printf("Customer %d not feasible. Placing back into priority queue with new priority %d\n", nextCustomer.id, nextCustomer.priority);
                     if (!addAfterVehicleAssignment.contains(nextCustomer)){
                         addAfterVehicleAssignment.add(nextCustomer);
                     }
                     continue;
                 } else{
-                    System.out.printf("Customer %d cannot be assigned to any vehicle. Adding to discard pile\n", nextCustomer.id);
+                    //System.out.printf("Customer %d cannot be assigned to any vehicle. Adding to discard pile\n", nextCustomer.id);
                     discardList.add(nextCustomer);
                 }
             }
             Route route = new Route(vehicles.get(i).id, vehicles.get(i).passengers, vehicles.get(i));
-            route.generateRoute();
-            routes.add(route);
+            if (route.succession.size() > 0){
+                route.generateRoute();
+                routes.add(route);
+            }
             for (Customer customer : addAfterVehicleAssignment){
                 customer.assignmentAttempts ++;
                 if (!priorityQueue.contains(customer)) priorityQueue.add(customer);
@@ -130,7 +110,7 @@ public class Scheduler {
         return routes;
     }
 
-    public List<Customer> insertCustomer(Customer customer, List<Customer> currentPassengers){
+    public List<Customer> insertCustomer(Customer customer, List<Customer> currentPassengers, int capacity){
         /*
         size:
         1 - ..A .A. A..
@@ -162,11 +142,21 @@ public class Scheduler {
         //System.out.println("Checking feasibility of possible positions for customer " + customer.id);
         //System.out.println("....................");
         //System.out.println("....................\n");
-        int[] firstFeasibleRoute = getFirstFeasible(currentPassengers, customer, customerPositions);
+        // CONFIGURATION - SOLUTION GENERATION
+        int[] firstFeasibleRoute = getFirstFeasible(currentPassengers, customer, customerPositions, capacity);
         if (firstFeasibleRoute != null){
-            System.out.printf("First feasible indexes for customer %d: {%d, %d}\n", customer.id, firstFeasibleRoute[0], firstFeasibleRoute[1]);
-            currentPassengers.add(firstFeasibleRoute[0], customer);
-            currentPassengers.add(firstFeasibleRoute[1], customer);
+            //System.out.printf("Best feasible indexes for customer %d: {%d, %d}\n", customer.id, bestFeasibleRoute[0], bestFeasibleRoute[1]);
+            if (firstFeasibleRoute[0] > currentPassengers.size()){
+                currentPassengers.add(customer);
+            } else{
+                currentPassengers.add(firstFeasibleRoute[0], customer);
+            }
+            if (firstFeasibleRoute[1] > currentPassengers.size()){
+                currentPassengers.add(customer);
+            } else{
+                currentPassengers.add(firstFeasibleRoute[1], customer);
+            }
+
             return currentPassengers;
         } else{
             // no feasible allocation, place passenger in queue with new priority
@@ -174,12 +164,12 @@ public class Scheduler {
         }
     }
 
-    public int[] getFirstFeasible(List<Customer> passengers, Customer customer, List<int[]> customerPositions){
+    public int[] getFirstFeasible(List<Customer> passengers, Customer customer, List<int[]> customerPositions, int capacity){
         for (int[] order : customerPositions){
             passengers.add(order[0], customer);
             passengers.add(order[1], customer);
 
-            Route route = new Route(100, passengers, new Vehicle(100, new int[]{50,50}));
+            Route route = new Route(100, passengers, new Vehicle(100, new int[]{50,50}, capacity));
             route.generateRoute();
 
             if (isFeasible(route)){
@@ -195,6 +185,60 @@ public class Scheduler {
             deleteRoute(route);
         }
         return null;
+    }
+
+    public int[] getBestFeasible(List<Customer> passengers, Customer customer, List<int[]> customerPositions, int capacity){
+        //time limit - 20 seconds
+        long currentTime;
+        int deadline = 20*1000;
+        long startTime = System.currentTimeMillis();
+        double lowestCost = 100000;
+        int[] bestFeasible = new int[]{-1,-1};
+        //System.out.printf("Total number of allocations for customer %d: %d\n", customer.id, customerPositions.size());
+        currentTime = System.currentTimeMillis();
+        for (int[] order : customerPositions){
+            if (currentTime-startTime >= deadline){
+                if (bestFeasible[0] == -1) {
+                    return null;
+                }
+                return bestFeasible;
+            }
+            if (order[0] > passengers.size()){
+                passengers.add(customer);
+            } else {
+                passengers.add(order[0], customer);
+            }
+            if (order[1] > passengers.size()){
+                passengers.add(customer);
+            } else {
+                passengers.add(order[1], customer);
+            }
+
+            Route route = new Route(100, passengers, new Vehicle(100, new int[]{50,50}, capacity));
+            route.generateRoute();
+
+            if (isFeasible(route)){
+                double cost = route.getCost();
+                if (cost < lowestCost){
+                    lowestCost = cost;
+                    bestFeasible = order;
+                }
+                deleteRoute(route);
+                passengers.remove(customer);
+                passengers.remove(customer);
+            }
+            passengers.remove(customer);
+            passengers.remove(customer);
+
+            deleteRoute(route);
+        }
+
+        if (bestFeasible[0] == -1) {
+            return null;
+        }
+
+        return bestFeasible;
+
     }
 
     public void deleteRoute(Route route){
@@ -224,12 +268,16 @@ public class Scheduler {
             if (passenger.dropoffTime.isAfter(passenger.timeWindow[1])){
                 return false;
             }
-            if (route.getCurrentPassengers() > route.vehicle.capacity){
+            if (route.capacityExceeded(route.vehicle.capacity)){
                 return false;
             }
+
+            /*
             if (route.getEndOfService().isAfter(route.vehicle.endTime)){
+                System.out.println("Route has reached end of service");
                 return false;
             }
+             */
         }
         return true;
     }
@@ -342,6 +390,364 @@ public class Scheduler {
         return totalScores/listSize;
     }
 
+    public List<SubGraph> interRouteDiscardSwap(List<SubGraph> routes, int n){
+        /*
+         * Remove n passengers from random vehicles and add to discard pile
+         * Go through discard pile - for each passenger, loop through routes
+         * (randomly) and try to insert passenger into route. If they cannot
+         * be inserted, they can remain in the discard pile.
+         */
+        int maxIterations = 10;
+        List<SubGraph> bestOrder = routes;
+        int iterations = 0;
+        int improvements = 0;
+        double lowestCost = getTotalJourneyCost(routes);
+        List<SubGraph> newOrder;
+        Random rand = new Random();
+        List<SubGraph> changed = new ArrayList<>();
+        List<SubGraph> cannotRemoveMore = new ArrayList<>();
+
+        while (iterations<maxIterations){
+            List<SubGraph> testOrder = new ArrayList<>();
+            for (SubGraph sg : bestOrder){
+                testOrder.add(SerializationUtils.clone(sg));
+            }
+            //remove n passengers from random graphs
+            while (n>0 && cannotRemoveMore.size() < bestOrder.size()){
+                //randomly select route
+                int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                SubGraph currentRoute = testOrder.get(r1);
+                if (cannotRemoveMore.contains(currentRoute)) continue;
+                if (currentRoute.getSize() <= 2){
+                    cannotRemoveMore.add(currentRoute);
+                    continue;
+                }
+                //randomly select customer
+                int r2 = rand.nextInt((currentRoute.getSize() - 2) + 1);
+                int[] firstRoutePassengerLocations = getCustomerVertexes(currentRoute, r2);
+                Vertex[] vertexPairs = currentRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+                discardList.add(vertexPairs[0].customer);
+                //System.out.printf("Customer %d added to discard pile\n", vertexPairs[0].customer.id);
+                n --;
+            }
+
+            //remove duplicates from discard pile
+            List<Customer> alreadyPresent = new ArrayList<>();
+            for (int i=0;i<discardList.size();i++){
+                if (alreadyPresent.contains(discardList.get(i))){
+                    discardList.remove(i);
+                    i --;
+                } else{
+                    alreadyPresent.add(discardList.get(i));
+                }
+            }
+
+            List<SubGraph> finalList = new ArrayList<>();
+            for (Iterator<Customer> iterator = discardList.iterator(); iterator.hasNext(); ) {
+                Customer currentCustomer = iterator.next();
+                int i = 0;
+                int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                while (i < testOrder.size()){
+                    SubGraph sg = testOrder.get(r1);
+                    List<Customer> currentCustomerList = insertCustomer(currentCustomer, sg.route.succession, sg.route.vehicle.capacity);
+                    if (currentCustomerList != null){
+                        //System.out.printf("Successfully added customer %d to route %s\n", currentCustomer.id, sg.id);
+                        currentCustomerList = removeDuplicates(currentCustomerList);
+                        testOrder.remove(sg);
+                        //System.out.printf("Route %d size: %d", sg.id, currentCustomerList.size());
+                        Route r = new Route(sg.route.id, currentCustomerList, sg.route.vehicle);
+                        //sg.route.succession = currentCustomerList;
+                        r.generateRoute();
+                        //System.out.printf("Route %d size: %d", r.id, r.succession.size());
+                        SubGraph sgNew = new SubGraph(sg.id);
+                        sgNew.fillRoutes(r);
+                        //System.out.printf("Route %d graph size: %d, list size: %d", sgNew.id, sgNew.getSize(), sgNew.route.succession.size());
+                        testOrder.add(sgNew);
+
+                        /*
+                        sg.route.succession = currentCustomerList;
+                        System.out.println(sg.route.succession.size());
+                        sg.route.generateRoute();
+                        System.out.println(sg.route.succession.size());
+                        sg.fillRoutes(sg.route);
+                        System.out.println(sg.route.succession.size());
+                        System.out.println(sg.printGraph());
+                         */
+
+                        changed.add(sg);
+                        //discardList.remove(currentCustomer);
+                        iterator.remove();
+                        //System.out.println("Discard list size: "+discardList.size());
+                        break;
+                    } else{
+                        if (r1 == testOrder.size()-1){
+                            r1 = 0;
+                        } else {
+                            r1 ++;
+                        }
+                    }
+                    i ++;
+                }
+                interRouteSwapChanges = changed;
+            }
+
+
+/*
+            //remove any duplicates from journey
+            for (SubGraph sg : testOrder){
+                System.out.printf("Checking graph %d for duplicates\n", sg.id);
+                System.out.println(sg.printGraph());
+                List<Customer> completed = new ArrayList<>();
+                Vertex current = sg.head;
+                while (sg.getNextVertex(current) != null){
+                    current = sg.getNextVertex(current);
+                    if (completed.contains(current.customer)){
+                        System.out.println("REMOVING VERTEX "+current.id);
+                        System.out.println("Type: "+current.type);
+                        sg.removeVertex(current);
+                    } else if (current.type == "dropoff"){
+                        completed.add(current.customer);
+                    }
+                }
+
+
+
+                Map<Vertex, Integer> completed = new HashMap<>();
+                Vertex current = sg.head;
+                completed.put(current, 1);
+                while (sg.getNextVertex(current) != null){
+                    current = sg.getNextVertex(current);
+                    if (completed.containsKey(current)){
+                        if (completed.get(current) == 2){
+                            System.out.println("REMOVING VERTEX "+current.id);
+                            sg.removeVertex(current);
+                        } else{
+                            int returnedValue = completed.get(current);
+                            completed.replace(current, returnedValue+1);
+                        }
+                    } else{
+                        completed.put(current, 1);
+                    }
+                }
+
+                 */
+
+
+
+
+            double cost = getTotalJourneyCost(testOrder);
+            if (cost < lowestCost){
+                improvements ++;
+                lowestCost = cost;
+                bestOrder = testOrder;
+            }
+            iterations ++;
+        }
+        //System.out.println("Improvements made: " + improvements);
+        interRouteImprovements = improvements;
+
+        return bestOrder;
+    }
+
+    public List<SubGraph> interRouteDiscardSwapSatisfaction(List<SubGraph> routes, int n){
+        /*
+         * Remove n passengers from random vehicles and add to discard pile
+         * Go through discard pile - for each passenger, loop through routes
+         * (randomly) and try to insert passenger into route. If they cannot
+         * be inserted, they can remain in the discard pile.
+         */
+        int maxIterations = 10;
+        List<SubGraph> bestOrder = routes;
+        int iterations = 0;
+        int improvements = 0;
+        double bestSatisfaction = getCustomerSatisfaction(routes);
+        List<SubGraph> newOrder;
+        Random rand = new Random();
+        List<SubGraph> changed = new ArrayList<>();
+        List<SubGraph> cannotRemoveMore = new ArrayList<>();
+
+        while (iterations<maxIterations){
+            List<SubGraph> testOrder = new ArrayList<>();
+            for (SubGraph sg : bestOrder){
+                testOrder.add(SerializationUtils.clone(sg));
+            }
+            //remove n passengers from random graphs
+            while (n>0 && cannotRemoveMore.size() < bestOrder.size()){
+                //randomly select route
+                int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                SubGraph currentRoute = testOrder.get(r1);
+                if (cannotRemoveMore.contains(currentRoute)) continue;
+                if (currentRoute.getSize() <= 2){
+                    cannotRemoveMore.add(currentRoute);
+                    continue;
+                }
+                //randomly select customer
+                int r2 = rand.nextInt((currentRoute.getSize() - 2) + 1);
+                int[] firstRoutePassengerLocations = getCustomerVertexes(currentRoute, r2);
+                Vertex[] vertexPairs = currentRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+                discardList.add(vertexPairs[0].customer);
+                //System.out.printf("Customer %d added to discard pile\n", vertexPairs[0].customer.id);
+                n --;
+            }
+
+            //remove duplicates from discard pile
+            List<Customer> alreadyPresent = new ArrayList<>();
+            for (int i=0;i<discardList.size();i++){
+                if (alreadyPresent.contains(discardList.get(i))){
+                    discardList.remove(i);
+                    i --;
+                } else{
+                    alreadyPresent.add(discardList.get(i));
+                }
+            }
+
+            List<SubGraph> finalList = new ArrayList<>();
+            for (Iterator<Customer> iterator = discardList.iterator(); iterator.hasNext(); ) {
+                Customer currentCustomer = iterator.next();
+                int i = 0;
+                int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                while (i < testOrder.size()){
+                    SubGraph sg = testOrder.get(r1);
+                    List<Customer> currentCustomerList = insertCustomer(currentCustomer, sg.route.succession, sg.route.vehicle.capacity);
+                    if (currentCustomerList != null){
+                        //System.out.printf("Successfully added customer %d to route %s\n", currentCustomer.id, sg.id);
+                        currentCustomerList = removeDuplicates(currentCustomerList);
+                        testOrder.remove(sg);
+                        //System.out.printf("Route %d size: %d", sg.id, currentCustomerList.size());
+                        Route r = new Route(sg.route.id, currentCustomerList, sg.route.vehicle);
+                        //sg.route.succession = currentCustomerList;
+                        r.generateRoute();
+                        //System.out.printf("Route %d size: %d", r.id, r.succession.size());
+                        SubGraph sgNew = new SubGraph(sg.id);
+                        sgNew.fillRoutes(r);
+                        //System.out.printf("Route %d graph size: %d, list size: %d", sgNew.id, sgNew.getSize(), sgNew.route.succession.size());
+                        testOrder.add(sgNew);
+
+                        /*
+                        sg.route.succession = currentCustomerList;
+                        System.out.println(sg.route.succession.size());
+                        sg.route.generateRoute();
+                        System.out.println(sg.route.succession.size());
+                        sg.fillRoutes(sg.route);
+                        System.out.println(sg.route.succession.size());
+                        System.out.println(sg.printGraph());
+                         */
+
+                        changed.add(sg);
+                        //discardList.remove(currentCustomer);
+                        iterator.remove();
+                        //System.out.println("Discard list size: "+discardList.size());
+                        break;
+                    } else{
+                        if (r1 == testOrder.size()-1){
+                            r1 = 0;
+                        } else {
+                            r1 ++;
+                        }
+                    }
+                    i ++;
+                }
+                interRouteSwapChanges = changed;
+            }
+
+
+/*
+            //remove any duplicates from journey
+            for (SubGraph sg : testOrder){
+                System.out.printf("Checking graph %d for duplicates\n", sg.id);
+                System.out.println(sg.printGraph());
+                List<Customer> completed = new ArrayList<>();
+                Vertex current = sg.head;
+                while (sg.getNextVertex(current) != null){
+                    current = sg.getNextVertex(current);
+                    if (completed.contains(current.customer)){
+                        System.out.println("REMOVING VERTEX "+current.id);
+                        System.out.println("Type: "+current.type);
+                        sg.removeVertex(current);
+                    } else if (current.type == "dropoff"){
+                        completed.add(current.customer);
+                    }
+                }
+
+
+
+                Map<Vertex, Integer> completed = new HashMap<>();
+                Vertex current = sg.head;
+                completed.put(current, 1);
+                while (sg.getNextVertex(current) != null){
+                    current = sg.getNextVertex(current);
+                    if (completed.containsKey(current)){
+                        if (completed.get(current) == 2){
+                            System.out.println("REMOVING VERTEX "+current.id);
+                            sg.removeVertex(current);
+                        } else{
+                            int returnedValue = completed.get(current);
+                            completed.replace(current, returnedValue+1);
+                        }
+                    } else{
+                        completed.put(current, 1);
+                    }
+                }
+
+                 */
+
+
+
+
+            double satisfaction = getCustomerSatisfaction(testOrder);
+            if (satisfaction > bestSatisfaction){
+                improvements ++;
+                bestSatisfaction = satisfaction;
+                bestOrder = testOrder;
+            }
+            iterations ++;
+        }
+        //System.out.println("Improvements made: " + improvements);
+        interRouteImprovements = improvements;
+
+        return bestOrder;
+    }
+
+    public List<Customer> removeDuplicates(List<Customer> customerList){
+        Map<Customer, Integer> count = new HashMap<>();
+        for (int i=0; i<customerList.size(); i++){
+            Customer customer = customerList.get(i);
+            if (count.containsKey(customer)){
+                if (count.get(customer) == 2){
+                    //System.out.println("Removing customer "+customer.id);
+                    customerList.remove(i);
+                    i --;
+                } else{
+                    count.replace(customer, 2);
+                }
+            } else {
+                count.put(customer, 1);
+            }
+        }
+
+        return customerList;
+    }
+
+    public double getTotalJourneyCost(List<SubGraph> journey){
+        double cost = 0;
+        if (journey.size() == 0) return 0;
+        for (SubGraph sg : journey){
+            cost += sg.getCost();
+        }
+        cost += getDiscardListCost();
+
+        return cost;
+    }
+
+    public double getDiscardListCost(){
+        double costPerKm = 1.5;
+        double cost = 0;
+        for (Customer customer : discardList){
+            cost += (customer.distance(customer.endPoint))*costPerKm;
+        }
+        return cost;
+    }
+
     public List<SubGraph> swapBetweenRoutes(List<SubGraph> routes){
         /*
          * Set number of iterations
@@ -353,9 +759,9 @@ public class Scheduler {
          * start again for new graph array at new iteration
          */
 
-        int maxIterations = 1000;
+        int maxIterations = 100;
         int iterations = 0;
-        double bestScore = getAverageRouteScore(routes);
+        double bestCost = getTotalJourneyCost(routes);
         List<SubGraph> bestOrder = routes;
         List<SubGraph> newOrder;
         Random r = new Random();
@@ -366,54 +772,360 @@ public class Scheduler {
             // generate 4 random numbers:
             // 2 for selecting routes
             // 2 for selecting passengers
-            int r1 = r.nextInt((routes.size() - 1) + 1);
-            int r2 = r.nextInt((routes.size() - 1) + 1);
+            int r1 = r.nextInt((bestOrder.size() - 1) + 1);
+            int r2 = r.nextInt((bestOrder.size() - 1) + 1);
             while (r1 == r2){
-                r2 = r.nextInt((routes.size() - 1) + 1);
+                r2 = r.nextInt((bestOrder.size() - 1) + 1);
             }
             int r3 = r.nextInt((bestOrder.get(r1).getSize() - 2) + 1);
             int r4 = r.nextInt((bestOrder.get(r2).getSize() - 2) + 1);
 
-
-            SubGraph firstRoute = bestOrder.get(r1);
-            SubGraph secondRoute = bestOrder.get(r2);
-
-            System.out.println("r3: "+r3+" r4: "+r4);
-            int[] firstRoutePassengerLocations = getCustomerVertexes(firstRoute, r3);
-            System.out.printf("First route passenger locations: %d and %d\n", firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
-            int[] secondRoutePassengerLocations = getCustomerVertexes(secondRoute, r4);
-            System.out.printf("Second route passenger locations: %d and %d\n", secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
-
-            Vertex[] firstPairs = firstRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
-            Vertex[] secondPairs = secondRoute.removePassenger(secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
-
-            List<Customer> firstCustomerList = insertCustomer(firstPairs[0].customer, firstRoute.route.succession);
-            List<Customer> secondCustomerList = insertCustomer(secondPairs[0].customer, secondRoute.route.succession);
-            if (firstCustomerList == null || secondCustomerList == null) {
-                continue;
+            List<SubGraph> currentJourney = copyJourney(bestOrder);
+            SubGraph firstRoute = currentJourney.get(r1);
+            while (firstRoute.size == 0){
+                r1 = r.nextInt((bestOrder.size() - 1) + 1);
+                firstRoute = bestOrder.get(r1);
             }
-            feasible ++;
-            firstRoute.route.succession = firstCustomerList;
-            firstRoute.fillRoutes(firstRoute.route);
-            secondRoute.route.succession = secondCustomerList;
-            secondRoute.fillRoutes(secondRoute.route);
+            //SubGraph beforeRemoval1 = new SubGraph(1000, firstRoute);
+            SubGraph beforeRemoval1 = SerializationUtils.clone(firstRoute);
 
-            // replace 2 routes with updated routes
-            newOrder = bestOrder;
-            newOrder.remove(r1);
-            if (r1 > newOrder.size())
-            newOrder.remove(r2);
-            newOrder.add(firstRoute);
-            newOrder.add(secondRoute);
-            double averageScore = getAverageRouteScore(newOrder);
-            if (averageScore < bestScore){
-                System.out.println("Previous best: "+bestScore);
-                System.out.println("New best: "+averageScore);
-                bestScore = averageScore;
-                bestOrder = newOrder;
-                improvements ++;
+            SubGraph secondRoute = currentJourney.get(r2);
+            while (secondRoute.size == 0 || r2 == r1){
+                r2 = r.nextInt((bestOrder.size() - 1) + 1);
+                secondRoute = bestOrder.get(2);
+            }
+            //SubGraph beforeRemoval2 = new SubGraph(1001, secondRoute);
+            SubGraph beforeRemoval2 = SerializationUtils.clone(secondRoute);
+
+            //System.out.println("r3: "+r3+" r4: "+r4);
+            Customer c1 = firstRoute.get(r3).customer;
+            Customer c2 = secondRoute.get(r4).customer;
+            int[] firstRoutePassengerLocations = getCustomerVertexes(firstRoute, r3);
+            //System.out.printf("First route passenger locations: %d and %d\n", firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+            //System.out.println("First route size: "+firstRoute.size);
+            int[] secondRoutePassengerLocations = getCustomerVertexes(secondRoute, r4);
+            //System.out.printf("Second route passenger locations: %d and %d\n", secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
+            //System.out.println("Second route size: "+secondRoute.size);
+
+
+            //System.out.println("Removing passengers from each route...");
+            //System.out.println(beforeRemoval1.printGraph());
+            Vertex[] firstPairs = beforeRemoval1.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+            if ((firstPairs) == null) continue;
+            Vertex[] secondPairs = beforeRemoval2.removePassenger(secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
+            if ((secondPairs) == null) continue;
+            List<Customer> firstCustomerList = insertCustomer(secondPairs[0].customer, beforeRemoval1.route.succession, firstRoute.route.vehicle.capacity);
+            List<Customer> secondCustomerList = insertCustomer(firstPairs[0].customer, beforeRemoval2.route.succession, firstRoute.route.vehicle.capacity);
+
+            if (firstCustomerList == null || secondCustomerList == null) {
+                iterations++;
+                continue;
+            } else {
+                feasible++;
+                firstRoute.route.succession = firstCustomerList;
+                firstRoute.fillRoutes(firstRoute.route);
+                secondRoute.route.succession = secondCustomerList;
+                secondRoute.fillRoutes(secondRoute.route);
+
+                // replace 2 routes with updated routes
+                //newOrder = bestOrder;
+                //newOrder.add(firstRoute);
+                //newOrder.add(secondRoute);
+                double newCost = getTotalJourneyCost(currentJourney);
+                if (newCost < bestCost) {
+                    bestCost = newCost;
+                    bestOrder = currentJourney;
+                    improvements++;
+                }
             }
             iterations ++;
+        }
+        return bestOrder;
+    }
+
+    public List<SubGraph> swapBetweenRoutesSat(List<SubGraph> routes){
+        /*
+         * Set number of iterations
+         * At each iteration, pick 2 random routes
+         * Swap a random passenger (pickup and drop-off) in one
+         * route for a random passenger in the other route
+         * Check for feasibility and for improvements
+         * if improved: swap original routes for new routes
+         * start again for new graph array at new iteration
+         */
+
+        int maxIterations = 100;
+        int iterations = 0;
+        double bestSatisfaction = getCustomerSatisfaction(routes);
+        List<SubGraph> bestOrder = routes;
+        List<SubGraph> newOrder;
+        Random r = new Random();
+        int feasible = 0;
+        int improvements = 0;
+
+        while (iterations < maxIterations){
+            // generate 4 random numbers:
+            // 2 for selecting routes
+            // 2 for selecting passengers
+            int r1 = r.nextInt((bestOrder.size() - 1) + 1);
+            int r2 = r.nextInt((bestOrder.size() - 1) + 1);
+            while (r1 == r2){
+                r2 = r.nextInt((bestOrder.size() - 1) + 1);
+            }
+            int r3 = r.nextInt((bestOrder.get(r1).getSize() - 2) + 1);
+            int r4 = r.nextInt((bestOrder.get(r2).getSize() - 2) + 1);
+
+            List<SubGraph> currentJourney = copyJourney(bestOrder);
+            SubGraph firstRoute = currentJourney.get(r1);
+            //SubGraph beforeRemoval1 = new SubGraph(1000, firstRoute);
+            SubGraph beforeRemoval1 = SerializationUtils.clone(firstRoute);
+
+            SubGraph secondRoute = currentJourney.get(r2);
+            //SubGraph beforeRemoval2 = new SubGraph(1001, secondRoute);
+            SubGraph beforeRemoval2 = SerializationUtils.clone(secondRoute);
+
+            //System.out.println("r3: "+r3+" r4: "+r4);
+            Customer c1 = firstRoute.get(r3).customer;
+            Customer c2 = secondRoute.get(r4).customer;
+            int[] firstRoutePassengerLocations = getCustomerVertexes(firstRoute, r3);
+            //System.out.printf("First route passenger locations: %d and %d\n", firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+            int[] secondRoutePassengerLocations = getCustomerVertexes(secondRoute, r4);
+            //System.out.printf("Second route passenger locations: %d and %d\n", secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
+
+
+            //System.out.println("Removing passengers from each route...");
+            Vertex[] firstPairs = beforeRemoval1.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+            if ((firstPairs) == null) continue;
+            Vertex[] secondPairs = beforeRemoval2.removePassenger(secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
+            if ((secondPairs) == null) continue;
+            List<Customer> firstCustomerList = insertCustomer(secondPairs[0].customer, beforeRemoval1.route.succession, firstRoute.route.vehicle.capacity);
+            List<Customer> secondCustomerList = insertCustomer(firstPairs[0].customer, beforeRemoval2.route.succession, firstRoute.route.vehicle.capacity);
+
+            if (firstCustomerList == null || secondCustomerList == null) {
+                iterations++;
+                continue;
+            } else {
+                feasible++;
+                firstRoute.route.succession = firstCustomerList;
+                firstRoute.fillRoutes(firstRoute.route);
+                secondRoute.route.succession = secondCustomerList;
+                secondRoute.fillRoutes(secondRoute.route);
+
+                // replace 2 routes with updated routes
+                //newOrder = bestOrder;
+                //newOrder.add(firstRoute);
+                //newOrder.add(secondRoute);
+                double newCost = getTotalJourneyCost(currentJourney);
+                double newSatisfaction = getCustomerSatisfaction(currentJourney);
+                if (newSatisfaction < bestSatisfaction) {
+                    bestSatisfaction = newCost;
+                    bestOrder = currentJourney;
+                    improvements++;
+                }
+            }
+            iterations ++;
+        }
+        return bestOrder;
+    }
+
+    public  List<SubGraph> copyJourney(List<SubGraph> journey){
+        List<SubGraph> newJourney = new ArrayList<>();
+        for (SubGraph sg : journey){
+            newJourney.add(SerializationUtils.clone(sg));
+        }
+
+        return  newJourney;
+    }
+
+    public List<SubGraph> oneToManySwap(List<SubGraph> routes){
+        int iterations = 0;
+        double lowestCost = getTotalJourneyCost(routes);
+        List<SubGraph> bestOrder = routes;
+        List<SubGraph> currentOrder = routes;
+        List<SubGraph> newOrder;
+        Random r = new Random();
+        int feasible = 0;
+        int improvements = 0;
+
+        Map<Integer, Integer> checkedCustomers = new HashMap<>();
+
+        int r1 = r.nextInt((bestOrder.size() - 1) + 1);
+        int r2 = r.nextInt((bestOrder.get(r1).getSize() - 2) + 1);
+
+        //SubGraph beforeRemoval1 = new SubGraph(1000, firstRoute);
+        for (SubGraph sg : bestOrder) {
+
+            int pos = 0;
+            Vertex current = sg.head;
+            while (sg.getNextVertex(current) != null) {
+                //System.out.println("Checking vertex "+current.id);
+                try{
+                    List<SubGraph> newJourney = copyJourney(currentOrder);
+                    SubGraph firstRoute = newJourney.get(r1);
+                    SubGraph secondRoute = null;
+                    for (SubGraph route : newJourney){
+                        if (route.id == sg.id){
+                            secondRoute = route;
+                        }
+                    }
+                    Customer c1 = firstRoute.get(r2).customer;
+                    int[] firstRoutePassengerLocations = getCustomerVertexes(firstRoute, r2);
+                    Vertex[] firstPairs = null;
+                    while (firstPairs == null){
+                        firstPairs = firstRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+                    }
+                    if (checkedCustomers.containsKey(current.customer.id)){
+                        current = sg.getNextVertex(current);
+                        continue;
+                    } else{
+                        checkedCustomers.put(current.customer.id, 1);
+                    }
+                    Customer c2 = current.customer;
+                    int[] secondRoutePassengerLocations = getCustomerVertexes(secondRoute, pos);
+                    Vertex[] secondPairs = secondRoute.removePassenger(secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
+                    if ((secondPairs) == null) continue;
+
+                    List<Customer> firstCustomerList = insertCustomer(secondPairs[0].customer, firstRoute.route.succession, firstRoute.route.vehicle.capacity);
+                    List<Customer> secondCustomerList = insertCustomer(firstPairs[0].customer, secondRoute.route.succession, firstRoute.route.vehicle.capacity);
+
+                    if (firstCustomerList == null || secondCustomerList == null) {
+                        iterations++;
+                        continue;
+                    } else {
+                        feasible++;
+                        firstRoute.route.succession = firstCustomerList;
+                        firstRoute.fillRoutes(firstRoute.route);
+                        sg.route.succession = secondCustomerList;
+                        sg.fillRoutes(sg.route);
+                        // replace 2 routes with updated routes
+                        double newCost;
+                        try{
+                            newCost = getTotalJourneyCost(newJourney);
+                        } catch (NullPointerException e){
+                            continue;
+                        }
+                        if (newCost < lowestCost) {
+                            lowestCost = newCost;
+                            bestOrder = newJourney;
+                            improvements++;
+                        }
+                    }
+                    iterations++;
+                    /*
+                    while (current.customer.id == c1.id){
+                        System.out.println("found duplicate");
+                        if (sg.getNextVertex(current) != null){
+                            current = sg.getNextVertex(current);
+                        } else{
+                            break;
+                        }
+                    }
+
+                     */
+                    current = sg.getNextVertex(current);
+                    pos ++;
+                } catch (Exception e){
+                    if (sg.getNextVertex(current) != null){
+                        current = sg.getNextVertex(current);
+                        pos ++;
+                        continue;
+                    } else{
+                        break;
+                    }
+                }
+                //System.out.println("finished checking vertex "+current.id);
+            }
+        }
+        return bestOrder;
+    }
+
+    public List<SubGraph> oneToManySwapSat(List<SubGraph> routes){
+        int iterations = 0;
+        double bestSatisfaction = getCustomerSatisfaction(routes);
+        List<SubGraph> bestOrder = routes;
+        List<SubGraph> currentOrder = routes;
+        List<SubGraph> newOrder;
+        Random r = new Random();
+        int feasible = 0;
+        int improvements = 0;
+
+        Map<Integer, Integer> checkedCustomers = new HashMap<>();
+
+        int r1 = r.nextInt((bestOrder.size() - 1) + 1);
+        int r2 = r.nextInt((bestOrder.get(r1).getSize() - 2) + 1);
+
+        //SubGraph beforeRemoval1 = new SubGraph(1000, firstRoute);
+        for (SubGraph sg : bestOrder) {
+
+            int pos = 0;
+            Vertex current = sg.head;
+            while (sg.getNextVertex(current) != null) {
+                //System.out.println("Checking vertex "+current.id);
+                try{
+                    List<SubGraph> newJourney = copyJourney(currentOrder);
+                    SubGraph firstRoute = newJourney.get(r1);
+                    SubGraph secondRoute = null;
+                    for (SubGraph route : newJourney){
+                        if (route.id == sg.id){
+                            secondRoute = route;
+                        }
+                    }
+                    Customer c1 = firstRoute.get(r2).customer;
+                    int[] firstRoutePassengerLocations = getCustomerVertexes(firstRoute, r2);
+                    Vertex[] firstPairs = null;
+                    while (firstPairs == null){
+                        firstPairs = firstRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+                    }
+                    if (checkedCustomers.containsKey(current.customer.id)){
+                        current = sg.getNextVertex(current);
+                        continue;
+                    } else{
+                        checkedCustomers.put(current.customer.id, 1);
+                    }
+                    Customer c2 = current.customer;
+                    int[] secondRoutePassengerLocations = getCustomerVertexes(secondRoute, pos);
+                    Vertex[] secondPairs = secondRoute.removePassenger(secondRoutePassengerLocations[0], secondRoutePassengerLocations[1]);
+                    if ((secondPairs) == null) continue;
+
+                    List<Customer> firstCustomerList = insertCustomer(secondPairs[0].customer, firstRoute.route.succession, firstRoute.route.vehicle.capacity);
+                    List<Customer> secondCustomerList = insertCustomer(firstPairs[0].customer, secondRoute.route.succession, firstRoute.route.vehicle.capacity);
+
+                    if (firstCustomerList == null || secondCustomerList == null) {
+                        iterations++;
+                        continue;
+                    } else {
+                        feasible++;
+                        firstRoute.route.succession = firstCustomerList;
+                        firstRoute.fillRoutes(firstRoute.route);
+                        sg.route.succession = secondCustomerList;
+                        sg.fillRoutes(sg.route);
+                        // replace 2 routes with updated routes
+                        double newSatisfaction;
+                        try{
+                            newSatisfaction = getCustomerSatisfaction(newJourney);
+                        } catch (NullPointerException e){
+                            continue;
+                        }
+                        if (newSatisfaction < bestSatisfaction) {
+                            bestSatisfaction = newSatisfaction;
+                            bestOrder = newJourney;
+                            improvements++;
+                        }
+                    }
+                    iterations++;
+                    current = sg.getNextVertex(current);
+                    pos ++;
+                } catch (Exception e){
+                    if (sg.getNextVertex(current) != null){
+                        current = sg.getNextVertex(current);
+                        pos ++;
+                        continue;
+                    } else{
+                        break;
+                    }
+                }
+                //System.out.println("finished checking vertex "+current.id);
+            }
         }
         return bestOrder;
     }
@@ -428,22 +1140,23 @@ public class Scheduler {
         while (sg.getNextVertex(current) != null){
             current = sg.getNextVertex(current);
             count ++;
-            if (current.customer.id == customerId && pos1 == -1){
-                pos1 = count;
-            } else {
-                pos2 = count;
+            if (current.customer.id == customerId){
+                if (pos1 == -1) {
+                    pos1 = count;
+                }else {
+                    pos2 = count;
+                }
             }
-            continue;
         }
         return new int[]{pos1, pos2};
 
     }
 
     public SubGraph twoOptSearchAlt(SubGraph sg){
-        int maxIterations = 2000;
+        int maxIterations = 500;
         SubGraph newRoute;
         SubGraph bestRoute = sg;
-        double bestScore = score(sg);
+        double bestScore = sg.getCost();
         double newScore;
         int swaps = 1;
         int improve = 0;
@@ -451,43 +1164,38 @@ public class Scheduler {
         long comparisons = 0;
         int feasibleCount = 0;
 
-        while (swaps != 0 && iterations < maxIterations) {
-            //swaps = 0;
+        while (swaps != 0){ //&& iterations < maxIterations) {
+            swaps = 0;
             for (int i = 1; i < sg.getSize() - 2; i++) {
                 for (int j = i+3; j < sg.getSize() - 3; j++) {
                     comparisons ++;
-                    newRoute = bestRoute;
-                    newRoute = swapEdges(newRoute, i, j);
-                    Route r = newRoute.adjustRoute();
-                    newRoute.fillRoutes(r);
-                    newScore = score(newRoute);
+                    SubGraph testRoute = SerializationUtils.clone(bestRoute);
+                    testRoute = swapEdges(testRoute, i, j);
+                    Route r;
+                    try{
+                        r = testRoute.adjustRoute();
+                    } catch (Exception e){
+                        continue;
+                    }
 
-                    //System.out.println(newScore);
-
+                    testRoute.fillRoutes(r);
+                    double testScore = testRoute.getCost();
                     if (isFeasible(r)){
                         feasibleCount++;
-                        if (newScore < bestScore) {
-                            System.out.println("Score has improved");
-                            System.out.println(newRoute.printGraph());
-                            //System.out.println("Result is feasible");
-                            System.out.println("Previous best: "+bestScore);
-                            System.out.println("New best: "+newScore);
-                            bestRoute = newRoute;
-                            bestScore = newScore;
+                        if (testScore < bestScore) {
+                            bestRoute = SerializationUtils.clone(testRoute);
+                            bestScore = testScore;
                             swaps++;
                             improve++;
                         }
                     }
-
-
                 }
             }
             iterations ++;
         }
-        System.out.println("Total comparisons made: " + comparisons);
-        System.out.println("Total improvements made: " + improve);
-        System.out.println("Total iterations made: " + iterations);
-        System.out.println("Feasible changes: " + feasibleCount);
+
+        twoOptComparisons += comparisons;
+        twoOptImprovements += improve;
 
         return bestRoute;
     }
@@ -553,7 +1261,7 @@ public class Scheduler {
         while (sg.getNextVertex(current) != null){
             nextVertex = sg.getNextVertex(current);
             //System.out.printf("Calculating stats for vertex %s\n", nextVertex.id);
-            if (nextVertex.type == "dropoff") {
+            if (nextVertex.type.equals("dropoff")) {
                 //System.out.println("Getting ideal travel distance...");
                 double idealTravelDistance = nextVertex.customer.distance(nextVertex.customer.endPoint);
                 idealDistanceSum += idealTravelDistance;
@@ -613,9 +1321,8 @@ public class Scheduler {
         return capacity;
     }
 
-    public List<Customer> parseCustomers(){
+    public List<Customer> parseCustomers(String csvFile){
         List<Customer> customers = new ArrayList<>();
-        String csvFile = "customers.csv";
         String line = "";
         String cvsSplitBy = ",";
 
@@ -626,7 +1333,7 @@ public class Scheduler {
                 // use comma as separator
                 String[] entry = line.split(cvsSplitBy);
 
-                SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss a", Locale.ENGLISH);
+                SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.ENGLISH);
                 try{
                     int id = Integer.parseInt(entry[0]);
                     int[] startPoint = {Integer.parseInt(entry[1]), Integer.parseInt(entry[2])};
@@ -650,6 +1357,447 @@ public class Scheduler {
         return customers;
     }
 
+    public void realTimeInsertion(String customerList, List<SubGraph> journey) throws ParseException {
+        /*
+         * Taking real-time customer orders to see if they can be accommodated
+         * receive order,
+         * add customer to discard pile,
+         * run interRouteDiscardSwap for 5 minutes
+         * new insert method: a parameter for time to insert
+         * limitations: cannot change a customer due for collection in next 20 mins
+         * to discard pile
+         * create new state space
+         */
+        //SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss a", Locale.ENGLISH);
+        //Date converted = formatter.parse("29-12-2019 09:00:00 AM");
+        Boolean added = false;
+        DateTime startTime = new DateTime(2020, 03, 03, 9, 0, 0, 0);
+        List<Customer> realTimeCustomers = parseCustomers(customerList);
+        Random r = new Random();
+        //int insertAt = r.nextInt(discardList.size()-1);
+        //Collections.sort(realTimeCustomers);
+        realTimeCustomers.sort((c1, c2) -> c1.timeWindow[0].compareTo(c2.timeWindow[0]));
+        DateTime lastOrder = new DateTime(2020, 03, 03, 9, 0, 0, 0);
+        List<SubGraph> updated = new ArrayList<>();
+        for (int i=0; i<realTimeCustomers.size(); i++){
+            DateTime orderTime = generateOrderTime(lastOrder, realTimeCustomers.get(i).timeWindow[0]);
+            discardList.add(realTimeCustomers.get(i));
+            /*
+            discardList.add(realTimeCustomers.get(i+1));
+            discardList.add(realTimeCustomers.get(i+2));
+            discardList.add(realTimeCustomers.get(i+3));
+            discardList.add(realTimeCustomers.get(i+4));
+             */
+            updated = realTimeInterRouteDiscardSwap(journey, 10, orderTime);
+        }
+        System.out.println("UPDATED JOURNEY");
+        printJourney(updated);
+    }
+
+    public void realTimeInsertionSatisfaction(String customerList, List<SubGraph> journey) throws ParseException {
+        /*
+         * Taking real-time customer orders to see if they can be accommodated
+         * receive order,
+         * add customer to discard pile,
+         * run interRouteDiscardSwap for 5 minutes
+         * new insert method: a parameter for time to insert
+         * limitations: cannot change a customer due for collection in next 20 mins
+         * to discard pile
+         * create new state space
+         */
+        //SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss a", Locale.ENGLISH);
+        //Date converted = formatter.parse("29-12-2019 09:00:00 AM");
+        Boolean added = false;
+        DateTime startTime = new DateTime(2020, 03, 03, 9, 0, 0, 0);
+        List<Customer> realTimeCustomers = parseCustomers(customerList);
+        Random r = new Random();
+        //int insertAt = r.nextInt(discardList.size()-1);
+        //Collections.sort(realTimeCustomers);
+        realTimeCustomers.sort((c1, c2) -> c1.timeWindow[0].compareTo(c2.timeWindow[0]));
+        DateTime lastOrder = new DateTime(2020, 03, 03, 9, 0, 0, 0);
+        List<SubGraph> updated = new ArrayList<>();
+        for (int i=0; i<realTimeCustomers.size(); i++){
+            DateTime orderTime = generateOrderTime(lastOrder, realTimeCustomers.get(i).timeWindow[0]);
+            discardList.add(realTimeCustomers.get(i));
+            /*
+            discardList.add(realTimeCustomers.get(i+1));
+            discardList.add(realTimeCustomers.get(i+2));
+            discardList.add(realTimeCustomers.get(i+3));
+            discardList.add(realTimeCustomers.get(i+4));
+             */
+            updated = realTimeInterRouteDiscardSwapSatisfaction(journey, 5, orderTime);
+        }
+    }
+
+    public DateTime generateOrderTime(DateTime startTime, DateTime pickupRequest){
+        //DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        //DateTime startTimeNew = dtf.parseDateTime(String.valueOf(startTime));
+        //DateTime pickupRequestNew = dtf.parseDateTime(String.valueOf(pickupRequest));
+        //long diff = Timestamp.valueOf(String.valueOf(pickupRequestNew)).getTime() - Timestamp.valueOf(String.valueOf(startTimeNew)).getTime() + 1;
+        //long newTime = Timestamp.valueOf(String.valueOf(startTime)).getTime() + (long) (Math.random()*diff);
+        Minutes diff = Minutes.minutesBetween(startTime, pickupRequest);
+        Random r = new Random();
+        int delay = r.nextInt((diff.getMinutes()+1));
+        DateTime newTime = startTime.plusMinutes(delay);
+        return newTime;
+    }
+
+    public List<SubGraph> realTimeInterRouteDiscardSwapSatisfaction(List<SubGraph> routes, int n, DateTime orderTime){
+        /*
+         * Remove n passengers from random vehicles and add to discard pile
+         * Go through discard pile - for each passenger, loop through routes
+         * (randomly) and try to insert passenger into route. If they cannot
+         * be inserted, they can remain in the discard pile.
+         */
+        int maxIterations = 1;
+        List<SubGraph> bestOrder = routes;
+        int iterations = 0;
+        int improvements = 0;
+        double bestSatisfaction = getCustomerSatisfaction(routes);
+        List<SubGraph> newOrder;
+        Random rand = new Random();
+        List<SubGraph> changed = new ArrayList<>();
+        List<SubGraph> cannotRemoveMore = new ArrayList<>();
+        try{
+            while (iterations<maxIterations){
+                List<SubGraph> testOrder = new ArrayList<>();
+                for (SubGraph sg : bestOrder){
+                    testOrder.add(SerializationUtils.clone(sg));
+                }
+                //remove n passengers from random graphs
+                while (n>0 && cannotRemoveMore.size() < bestOrder.size()){
+                    //randomly select route
+                    int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                    SubGraph currentRoute = testOrder.get(r1);
+                    if (cannotRemoveMore.contains(currentRoute)) continue;
+                    if (currentRoute.getSize() <= 2){
+                        cannotRemoveMore.add(currentRoute);
+                        continue;
+                    }
+                    //randomly select customer
+                    int r2 = rand.nextInt((currentRoute.getSize() - 2) + 1);
+                    try{
+                        int[] firstRoutePassengerLocations = getCustomerVertexes(currentRoute, r2);
+                        Vertex[] vertexPairs = currentRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+                        if (vertexPairs == null || vertexPairs.length == 0){
+                            n --;
+                            continue;
+                        }
+                        discardList.add(vertexPairs[0].customer);
+                        //System.out.printf("Customer %d added to discard pile\n", vertexPairs[0].customer.id);
+                        n --;
+                    } catch (OutOfMemoryError e){
+                        n --;
+                        continue;
+                    }
+                }
+
+                //remove duplicates from discard pile
+                List<Customer> alreadyPresent = new ArrayList<>();
+                for (int i=0;i<discardList.size();i++){
+                    if (alreadyPresent.contains(discardList.get(i))){
+                        discardList.remove(i);
+                        i --;
+                    } else{
+                        alreadyPresent.add(discardList.get(i));
+                    }
+                }
+
+                List<SubGraph> finalList = new ArrayList<>();
+                for (Iterator<Customer> iterator = discardList.iterator(); iterator.hasNext(); ) {
+                    Customer currentCustomer = iterator.next();
+                    int i = 0;
+                    int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                    while (i < testOrder.size()){
+                        SubGraph sg = testOrder.get(r1);
+                        List<Customer> currentCustomerList = insertRealTime(currentCustomer, sg, sg.route.vehicle.capacity, orderTime);
+                        if (currentCustomerList != null){
+                            //System.out.printf("Successfully added customer %d to route %s\n", currentCustomer.id, sg.id);
+                            currentCustomerList = removeDuplicates(currentCustomerList);
+                            testOrder.remove(sg);
+                            //System.out.printf("Route %d size: %d", sg.id, currentCustomerList.size());
+                            Route r = new Route(sg.route.id, currentCustomerList, sg.route.vehicle);
+                            //sg.route.succession = currentCustomerList;
+                            r.generateRoute();
+                            //System.out.printf("Route %d size: %d", r.id, r.succession.size());
+                            SubGraph sgNew = new SubGraph(sg.id);
+                            sgNew.fillRoutes(r);
+                            //System.out.printf("Route %d graph size: %d, list size: %d", sgNew.id, sgNew.getSize(), sgNew.route.succession.size());
+                            testOrder.add(sgNew);
+
+                        /*
+                        sg.route.succession = currentCustomerList;
+                        System.out.println(sg.route.succession.size());
+                        sg.route.generateRoute();
+                        System.out.println(sg.route.succession.size());
+                        sg.fillRoutes(sg.route);
+                        System.out.println(sg.route.succession.size());
+                        System.out.println(sg.printGraph());
+                         */
+
+                            changed.add(sg);
+                            //discardList.remove(currentCustomer);
+                            iterator.remove();
+                            //System.out.println("Discard list size: "+discardList.size());
+                            break;
+                        } else{
+                            if (r1 == testOrder.size()-1){
+                                r1 = 0;
+                            } else {
+                                r1 ++;
+                            }
+                        }
+                        i ++;
+                    }
+                    interRouteSwapChanges = changed;
+                }
+
+                double satisfaction = getCustomerSatisfaction(testOrder);
+                if (satisfaction < bestSatisfaction){
+                    improvements ++;
+                    bestSatisfaction = satisfaction;
+                    bestOrder = testOrder;
+                }
+                iterations ++;
+            }
+            //System.out.println("Improvements made: " + improvements);
+            interRouteImprovements = improvements;
+
+            return bestOrder;
+        } catch (NullPointerException e){
+            return null;
+        }
+
+    }
+
+    public List<SubGraph> realTimeInterRouteDiscardSwap(List<SubGraph> routes, int n, DateTime orderTime){
+        /*
+         * Remove n passengers from random vehicles and add to discard pile
+         * Go through discard pile - for each passenger, loop through routes
+         * (randomly) and try to insert passenger into route. If they cannot
+         * be inserted, they can remain in the discard pile.
+         */
+        int maxIterations = 1;
+        List<SubGraph> bestOrder = routes;
+        int iterations = 0;
+        int improvements = 0;
+        double lowestCost = getTotalJourneyCost(routes);
+        List<SubGraph> newOrder;
+        Random rand = new Random();
+        List<SubGraph> changed = new ArrayList<>();
+        List<SubGraph> cannotRemoveMore = new ArrayList<>();
+        try{
+            while (iterations<maxIterations){
+                List<SubGraph> testOrder = new ArrayList<>();
+                for (SubGraph sg : bestOrder){
+                    testOrder.add(SerializationUtils.clone(sg));
+                }
+                //remove n passengers from random graphs
+                while (n>0 && cannotRemoveMore.size() < bestOrder.size()){
+                    //randomly select route
+                    int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                    SubGraph currentRoute = testOrder.get(r1);
+                    if (cannotRemoveMore.contains(currentRoute)) continue;
+                    if (currentRoute.getSize() <= 2){
+                        cannotRemoveMore.add(currentRoute);
+                        continue;
+                    }
+                    //randomly select customer
+                    int r2 = rand.nextInt((currentRoute.getSize() - 2) + 1);
+                    try{
+                        int[] firstRoutePassengerLocations = getCustomerVertexes(currentRoute, r2);
+                        Vertex[] vertexPairs = currentRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
+                        if (vertexPairs == null || vertexPairs.length == 0){
+                            n --;
+                            continue;
+                        }
+                        discardList.add(vertexPairs[0].customer);
+                        //System.out.printf("Customer %d added to discard pile\n", vertexPairs[0].customer.id);
+                        n --;
+                    } catch (OutOfMemoryError e){
+                        n --;
+                        continue;
+                    }
+                }
+
+                //remove duplicates from discard pile
+                List<Customer> alreadyPresent = new ArrayList<>();
+                for (int i=0;i<discardList.size();i++){
+                    if (alreadyPresent.contains(discardList.get(i))){
+                        discardList.remove(i);
+                        i --;
+                    } else{
+                        alreadyPresent.add(discardList.get(i));
+                    }
+                }
+
+                List<SubGraph> finalList = new ArrayList<>();
+                for (Iterator<Customer> iterator = discardList.iterator(); iterator.hasNext(); ) {
+                    Customer currentCustomer = iterator.next();
+                    int i = 0;
+                    int r1 = rand.nextInt((testOrder.size() - 1) + 1);
+                    while (i < testOrder.size()){
+                        SubGraph sg = testOrder.get(r1);
+                        List<Customer> currentCustomerList = insertRealTime(currentCustomer, sg, sg.route.vehicle.capacity, orderTime);
+                        if (currentCustomerList != null){
+                            //System.out.printf("Successfully added customer %d to route %s\n", currentCustomer.id, sg.id);
+                            currentCustomerList = removeDuplicates(currentCustomerList);
+                            testOrder.remove(sg);
+                            //System.out.printf("Route %d size: %d", sg.id, currentCustomerList.size());
+                            Route r = new Route(sg.route.id, currentCustomerList, sg.route.vehicle);
+                            //sg.route.succession = currentCustomerList;
+                            r.generateRoute();
+                            //System.out.printf("Route %d size: %d", r.id, r.succession.size());
+                            SubGraph sgNew = new SubGraph(sg.id);
+                            sgNew.fillRoutes(r);
+                            //System.out.printf("Route %d graph size: %d, list size: %d", sgNew.id, sgNew.getSize(), sgNew.route.succession.size());
+                            testOrder.add(sgNew);
+
+                        /*
+                        sg.route.succession = currentCustomerList;
+                        System.out.println(sg.route.succession.size());
+                        sg.route.generateRoute();
+                        System.out.println(sg.route.succession.size());
+                        sg.fillRoutes(sg.route);
+                        System.out.println(sg.route.succession.size());
+                        System.out.println(sg.printGraph());
+                         */
+
+                            changed.add(sg);
+                            //discardList.remove(currentCustomer);
+                            iterator.remove();
+                            //System.out.println("Discard list size: "+discardList.size());
+                            break;
+                        } else{
+                            if (r1 == testOrder.size()-1){
+                                r1 = 0;
+                            } else {
+                                r1 ++;
+                            }
+                        }
+                        i ++;
+                    }
+                    interRouteSwapChanges = changed;
+                }
+
+
+/*
+            //remove any duplicates from journey
+            for (SubGraph sg : testOrder){
+                System.out.printf("Checking graph %d for duplicates\n", sg.id);
+                System.out.println(sg.printGraph());
+                List<Customer> completed = new ArrayList<>();
+                Vertex current = sg.head;
+                while (sg.getNextVertex(current) != null){
+                    current = sg.getNextVertex(current);
+                    if (completed.contains(current.customer)){
+                        System.out.println("REMOVING VERTEX "+current.id);
+                        System.out.println("Type: "+current.type);
+                        sg.removeVertex(current);
+                    } else if (current.type == "dropoff"){
+                        completed.add(current.customer);
+                    }
+                }
+
+
+
+                Map<Vertex, Integer> completed = new HashMap<>();
+                Vertex current = sg.head;
+                completed.put(current, 1);
+                while (sg.getNextVertex(current) != null){
+                    current = sg.getNextVertex(current);
+                    if (completed.containsKey(current)){
+                        if (completed.get(current) == 2){
+                            System.out.println("REMOVING VERTEX "+current.id);
+                            sg.removeVertex(current);
+                        } else{
+                            int returnedValue = completed.get(current);
+                            completed.replace(current, returnedValue+1);
+                        }
+                    } else{
+                        completed.put(current, 1);
+                    }
+                }
+
+                 */
+
+
+
+
+                double cost = getTotalJourneyCost(testOrder);
+                if (cost < lowestCost){
+                    improvements ++;
+                    lowestCost = cost;
+                    bestOrder = testOrder;
+                }
+                iterations ++;
+            }
+            //System.out.println("Improvements made: " + improvements);
+            interRouteImprovements = improvements;
+
+            return bestOrder;
+        } catch (NullPointerException e){
+            return null;
+        }
+
+    }
+
+    public List<Customer> insertRealTime(Customer customer, SubGraph currentRoute, int capacity, DateTime orderTime){
+        List<Customer> currentPassengers = currentRoute.route.succession;
+        int position = 1;
+        int insertPosition = 1;
+        Vertex current = currentRoute.head;
+        DateTime newTime = current.customer.pickupTime;
+        while (currentRoute.getNextVertex(current) != null){
+            current = currentRoute.getNextVertex(current);
+            if (current.type.equals("pickup")){
+                newTime = current.customer.pickupTime;
+            } else if (current.type.equals("dropoff")){
+                newTime = current.customer.dropoffTime;
+            }
+            if (newTime.isAfter(orderTime)) {
+                insertPosition = position;
+                break;
+            }
+            position ++;
+        }
+        List<int[]> customerPositions = new ArrayList<>();
+        if (currentPassengers.size() == 0){
+            currentPassengers.add(customer);
+            currentPassengers.add(customer);
+            return currentPassengers;
+        } else {
+            for (int i = insertPosition; i < currentPassengers.size(); i++) {
+                customerPositions.add(new int[]{i, i + 1});
+                customerPositions.add(new int[]{i, i + 2});
+                if (i == currentPassengers.size() - 1) customerPositions.add(new int[]{i + 1, i + 2});
+            }
+        }
+
+        //System.out.println("Checking feasibility of possible positions for customer " + customer.id);
+        //System.out.println("....................");
+        //System.out.println("....................\n");
+        //CONFIGURATION - REAL TIME
+        int[] bestFeasibleRoute = getBestFeasible(currentPassengers, customer, customerPositions, capacity);
+        if (bestFeasibleRoute != null){
+            //System.out.printf("First feasible indexes for customer %d: {%d, %d}\n", customer.id, firstFeasibleRoute[0], firstFeasibleRoute[1]);
+            if (bestFeasibleRoute[0] > currentPassengers.size()){
+                currentPassengers.add(customer);
+            } else{
+                currentPassengers.add(bestFeasibleRoute[0], customer);
+            }
+            if (bestFeasibleRoute[1] > currentPassengers.size()){
+                currentPassengers.add(customer);
+            } else{
+                currentPassengers.add(bestFeasibleRoute[1], customer);
+            }
+            return currentPassengers;
+        } else{
+            // no feasible allocation, place passenger in queue with new priority
+            return null;
+        }
+    }
+
     public static Color generateColor(){
         Random rand = new Random();
         // Java 'Color' class takes 3 floats, from 0 to 1.
@@ -660,12 +1808,39 @@ public class Scheduler {
         return randomColor;
     }
 
-    public List<Vehicle> populateFleet(int fleetSize){
+    public List<Vehicle> populateFleet(int fleetSize, int capacity){
         List<Vehicle> newFleet = new ArrayList<>();
         for (int i=0;i<fleetSize;i++){
-            newFleet.add(new Vehicle(i+1, new int[]{50, 50}));
+            newFleet.add(new Vehicle(i+1, new int[]{50, 50}, capacity));
         }
         return newFleet;
+    }
+
+    public double getCustomerSatisfaction(List<SubGraph> journey){
+        double satisfaction = 0;
+        int counter = 0;
+        for (SubGraph sg : journey){
+            satisfaction += sg.getCustomerSatisfaction();
+            counter ++;
+        }
+
+        return (satisfaction/counter)+.5;
+    }
+
+    public void printJourney(List<SubGraph> journey){
+        for (SubGraph graphRoute : journey) {
+            System.out.println(graphRoute.printGraph());
+            System.out.println("Score: " + score(graphRoute));
+            System.out.println("Cost: " + graphRoute.getCost());
+            System.out.println();
+        }
+
+        System.out.println("Journey cost: " + getTotalJourneyCost(journey));
+        System.out.println("\n\nNote: The following customers were not allocated to any vehicles ->");
+        for (Customer customer : discardList){
+            System.out.println("Customer " + customer.id);
+        }
+        System.out.println();
     }
 
     public static void main(String[] args){

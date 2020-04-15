@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.jline:jline-terminal-jansi:3.13.3">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jline/jline-terminal-jansi/3.13.3/48a0f0c47fc09766aa7e1b609b7707dfea315834/jline-terminal-jansi-3.13.3.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jline/jline-terminal-jansi/3.13.3/ca0cda168e63d1ace286823cf90a4c090dad1533/jline-terminal-jansi-3.13.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
