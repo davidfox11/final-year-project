@@ -21,7 +21,7 @@ public class Route implements Serializable {
         this.vehicle = vehicle;
     }
 
-    public int getCurrentPassengers(){
+    public Boolean capacityExceeded(int capacity){
         List<Customer> pickedUp = new ArrayList<>();
         int total = 0;
         for (Customer customer : succession){
@@ -32,8 +32,11 @@ public class Route implements Serializable {
                 pickedUp.add(customer);
                 total ++;
             }
+            if (total > capacity){
+                return true;
+            }
         }
-        return total;
+        return false;
     }
 
     public int getPositionOf(Customer customer){
@@ -134,7 +137,7 @@ public class Route implements Serializable {
         for (int i=0; i<succession.size(); i++){
             Customer customer = succession.get(i);
             if (i == 0) distanceTravelled += customer.distance(vehicle.startPoint);
-            else if (succession.get(i+1) == null){
+            else if (i == (succession.size()-1)){
                 distanceTravelled += customer.distance(true, vehicle.startPoint);
             } else{
                 Customer previousCustomer = succession.get(i-1);
@@ -146,8 +149,7 @@ public class Route implements Serializable {
                         // previous was dropped off
                         distanceTravelled += previousCustomer.distance(true, customer.endPoint);
                     }
-                    collectedCustomers.remove(i);
-                    i --;
+                    collectedCustomers.remove(customer);
                 } else{
                     if (collectedCustomers.contains(previousCustomer)){
                         distanceTravelled += previousCustomer.distance(customer);

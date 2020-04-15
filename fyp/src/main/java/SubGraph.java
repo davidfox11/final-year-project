@@ -3,12 +3,14 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class SubGraph implements Serializable {
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
+public class SubGraph implements Serializable
+{
     Vertex head;
     Vertex tail;
     Route route;
@@ -18,20 +20,29 @@ public class SubGraph implements Serializable {
     Vertex firstVertex;
     int serviceTime;
     int size;
+    Map<Integer, Double> costPerKm;
     double cost;
 
-    public SubGraph(int id){
+    public SubGraph(final int id) {
         this.id = id;
-        outgoingEdges = new HashMap<>();
-        vertexMap = new HashMap<>();
+        this.outgoingEdges = new HashMap<Vertex, List<Edge>>();
+        this.vertexMap = new HashMap<String, Vertex>();
+        (this.costPerKm = new HashMap<Integer, Double>()).put(3, 1.0);
+        this.costPerKm.put(4, 1.2);
+        this.costPerKm.put(5, 1.5);
+        this.costPerKm.put(6, 1.8);
+        this.costPerKm.put(7, 2.1);
+        this.costPerKm.put(8, 2.4);
+        this.costPerKm.put(10, 3.0);
+        this.costPerKm.put(12, 3.6);
     }
 
-    public SubGraph(int id, SubGraph other){
+    public SubGraph(final int id, final SubGraph subGraph) {
         this.id = id;
-        this.outgoingEdges = other.outgoingEdges;
-        this.vertexMap = other.vertexMap;
-        this.head = other.head;
-        this.route = other.route;
+        this.outgoingEdges = subGraph.outgoingEdges;
+        this.vertexMap = subGraph.vertexMap;
+        this.head = subGraph.head;
+        this.route = subGraph.route;
     }
 
     public Vertex getVertex(Customer customer, Boolean isPickup){
@@ -58,8 +69,8 @@ public class SubGraph implements Serializable {
         size ++;
         return v;
     }
-
-    public int getActualTravelDistance(Vertex endVertex){
+    
+    public int getActualTravelDistance(Vertex endVertex) {
         // get the actual distance travelled from one customer's pickup point to their drop-off point
         String[] splitId = endVertex.id.split("(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)");
         String pickupVertex = splitId[0]+"a";
@@ -77,8 +88,8 @@ public class SubGraph implements Serializable {
         }
         return totalDistance*50;
     }
-
-    public int getSize(){
+    
+    public int getSize() {
         size = 1;
         Vertex current = head;
         while (getNextVertex(current) != null){
@@ -87,35 +98,61 @@ public class SubGraph implements Serializable {
         }
         return size;
     }
-
-    public double getCost(){
-        return getRouteCost();
+    
+    public double getCost() {
+        return this.getRouteCost();
     }
-
-    public void setCost(){
-        this.cost = getRouteCost();
-    }
-
-    public double getRouteCost(){
-        double costPerKm = 1.5;
-        double distanceTravelled = 0;
+    
+    public double getCustomerSatisfaction() {
+        double[] total = new double[size];
         Vertex current = head;
-        distanceTravelled += current.customer.distance(route.vehicle.startPoint);
+        Boolean first = true;
+        int pos = 0;
         while (getNextVertex(current) != null) {
-            current = getNextVertex(current);
-            if (outgoingEdges.get(current).size() == 0){
-                distanceTravelled += current.customer.distance(true, route.vehicle.startPoint);
-            } else{
-                distanceTravelled += outgoingEdges.get(current).get(0).weight;
+            if (!first){
+                current = this.getNextVertex(current);
+            } else {
+                first = false;
             }
-
+            if (current.type.equals("dropoff")) {
+                double idealDistance = current.customer.distance(current.customer.endPoint);
+                double actualDistance = this.getActualTravelDistance(current);
+                double satisfaction;
+                if (actualDistance == idealDistance){
+                    satisfaction = 1;
+                } else{
+                    satisfaction = (1-(actualDistance-idealDistance)/actualDistance)+.3;
+                }
+                //System.out.println(satisfaction);
+                total[pos] = satisfaction;
+                pos ++;
+            }
         }
-
-
-        return costPerKm*distanceTravelled;
+        return Arrays.stream(total).average().orElse(Double.NaN);
     }
-
-    public Vertex get(int index){
+    
+    public void setCost() {
+        this.cost = this.getRouteCost();
+    }
+    
+    public double getRouteCost() {
+        final double doubleValue = this.costPerKm.get(this.route.vehicle.capacity);
+        final double n = 0.0;
+        Vertex vertex = this.head;
+        double n2 = n + vertex.customer.distance(this.route.vehicle.startPoint);
+        while (this.getNextVertex(vertex) != null) {
+            vertex = this.getNextVertex(vertex);
+            if (this.outgoingEdges.get(vertex).size() == 0) {
+                n2 += vertex.customer.distance(true, this.route.vehicle.startPoint);
+            }
+            else {
+                n2 += this.outgoingEdges.get(vertex).get(0).weight;
+            }
+        }
+        return doubleValue * n2;
+    }
+    
+    public Vertex get(int index) {
         int counter = 0;
         Vertex currentVertex = head;
         while (counter < index){
@@ -124,33 +161,35 @@ public class SubGraph implements Serializable {
         }
         return currentVertex;
     }
-
-    public Vertex getPreviousVertex(Vertex v){
+    
+    public Vertex getPreviousVertex(Vertex v) {
+        /*
         Vertex currentVertex = head;
-        if (currentVertex.id.equals(v.id)) return null;
-        if (getNextVertex(currentVertex).id.equals(v.id)) return  currentVertex;
+        if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
         while (getNextVertex(currentVertex) != null){
-            currentVertex = getNextVertex(currentVertex);
             //System.out.println(currentVertex.id);
-            //if (outgoingEdges.get(currentVertex).get(0) == null) return null;
-            //if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
-            if (getNextVertex(currentVertex).id.equals(v.id)) return  currentVertex;
+            currentVertex = getNextVertex(currentVertex);
+            if (outgoingEdges.get(currentVertex).size() == 0) System.out.println(currentVertex.id);
+            if (outgoingEdges.get(currentVertex).get(0) == null) return null;
+            if (outgoingEdges.get(currentVertex).get(0).toVertex.id.equals(v.id)) return currentVertex;
         }
         return null;
+         */
+        if (v.previousVertex != null){
+            return v.previousVertex;
+        } return null;
     }
-
-    public void removeVertex(Vertex v){
-        Vertex previousVertex = getPreviousVertex(v);
-        Vertex nextVertex = getNextVertex(v);
-        System.out.println(previousVertex.id);
-        System.out.println(v.id);
-        removeEdge(previousVertex.id, v.id);
-        outgoingEdges.remove(v);
-        vertexMap.remove(v.id);
-        addEdge(previousVertex, nextVertex);
+    
+    public void removeVertex(final Vertex vertex) {
+        final Vertex previousVertex = this.getPreviousVertex(vertex);
+        final Vertex nextVertex = this.getNextVertex(vertex);
+        this.removeEdge(previousVertex.id, vertex.id);
+        this.outgoingEdges.remove(vertex);
+        this.vertexMap.remove(vertex.id);
+        this.addEdge(previousVertex, nextVertex);
     }
-
-    public void removeVertex(Customer customer, Boolean isPickup){
+    
+    public void removeVertex(Customer customer, Boolean isPickup) {
         Vertex v = new Vertex(customer, isPickup);
         outgoingEdges.values().stream().forEach(e -> e.remove(v));
         outgoingEdges.remove(new Vertex(customer, isPickup));
@@ -160,6 +199,7 @@ public class SubGraph implements Serializable {
         Edge e = new Edge(v1, v2, v1.getWeight(v2));
         //System.out.printf("Edge cost: %d\n", v1.getWeight(v2));
         outgoingEdges.get(v1).add(e);
+        v2.previousVertex = v1;
         //System.out.println(outgoingEdges.get(v1).get(0).weight);
         return e;
     }
@@ -169,15 +209,15 @@ public class SubGraph implements Serializable {
         Vertex v2 = vertexMap.get(id2);
         Edge e = new Edge(v1, v2, v1.getWeight(v2));
         outgoingEdges.get(v1).add(e);
+        v2.previousVertex = v1;
         return e;
     }
 
     public Edge removeEdge(String id1, String id2){
         Vertex v1 = vertexMap.get(id1);
         Vertex v2 = vertexMap.get(id2);
-        //System.out.printf("Removing edge between %s and %s\n", v1.id, v2.id);
         List<Edge> outgoingEdge = outgoingEdges.get(v1);
-        if (outgoingEdge != null){
+        if (outgoingEdge != null && outgoingEdge.size() > 0){
             Edge e = outgoingEdge.get(0);
             outgoingEdge.remove(0);
             return e;
@@ -195,8 +235,8 @@ public class SubGraph implements Serializable {
         return distance;
     }
 
+
     public Vertex getNextVertex(Vertex v){
-        //System.out.println(v.id);
         if (outgoingEdges.get(v).size() == 0){
             return null;
         } else {
@@ -280,54 +320,39 @@ public class SubGraph implements Serializable {
         Boolean endVertex = false;
 
         Vertex jVertex = get(j);
-        //System.out.printf("J vertex: %s\n", jVertex.id);
         Vertex previousVertexJ = getPreviousVertex(jVertex);
         if (previousVertexJ == null){
             startVertex = true;
-        } //else System.out.printf("Previous: %s\n", previousVertexJ.id);
+        }
         Vertex nextVertexJ = getNextVertex(jVertex);
-
         if (nextVertexJ == null){
             endVertex = true;
         } else{
-            //System.out.printf("Next vertex: %s", nextVertexJ.id);
-            //remove edge between jVertex and the next one
             Edge eJ = removeEdge(jVertex.id, nextVertexJ.id);
         }
         if (!startVertex) {
-            // if J isn't the first vertex, remove edge between J and prev
             removeEdge(previousVertexJ.id, jVertex.id);
-            // if J isn't the end vertex then add edge between J and next vertex
-            if (!endVertex){
-                //System.out.printf("Adding edge between %s and %s\n", previousVertexJ.id, nextVertexJ.id);
-                addEdge(previousVertexJ, nextVertexJ);
-            }
-        } else head = nextVertexJ;
+            if (!endVertex) addEdge(previousVertexJ, nextVertexJ);
+        }
 
         startVertex = false;
         endVertex = false;
         Vertex iVertex = get(i);
-        //System.out.printf("I vertex: %s\n", iVertex.id);
         Vertex previousVertexI = getPreviousVertex(iVertex);
         if (previousVertexI == null){
             startVertex = true;
-        } //else System.out.printf("Previous: %s\n", previousVertexI.id);
+        }
         Vertex nextVertexI = getNextVertex(iVertex);
         if (nextVertexI == null){
             endVertex = true;
         } else {
-            //System.out.printf("Next: %s\n", nextVertexI.id);
             Edge eI = removeEdge(iVertex.id, nextVertexI.id);
         }
         if (!startVertex) {
             removeEdge(previousVertexI.id, iVertex.id);
-            if (!endVertex){
-                //System.out.printf("Adding edge between %s and %s\n", previousVertexI.id, nextVertexI.id);
-                addEdge(previousVertexI, nextVertexI);
-            }
-        } else head = nextVertexI;
+            if (!endVertex) addEdge(previousVertexI, nextVertexI);
+        }
 
-        //System.out.printf("Customer %d has been removed from route %d\n", iVertex.customer.id, route.id);
         return new Vertex[]{iVertex, jVertex};
     }
 
@@ -356,25 +381,7 @@ public class SubGraph implements Serializable {
         for (List<Edge> value : outgoingEdges.values()){
             System.out.printf("Vertex %s to Vertex %s: %d\n", value.get(0).fromVertex.id, value.get(0).toVertex.id, value.get(0).weight);
         }
-
  */
         return message;
     }
-
-    public static void main(String[] args){
-        SubGraph sg = new SubGraph(1);
-        Scheduler scheduler = new Scheduler();
-        List<Customer> customers = scheduler.parseCustomers("customers.csv");
-        Customer firstCustomer = customers.get(0);
-        Vertex v1 = sg.addVertex(customers.get(0), true);
-        Vertex v2 = sg.getVertex(firstCustomer, true);
-        System.out.println(v1.id);
-        System.out.println(v2.id);
-        if (v1.equals(v2)){
-            System.out.println("True");
-        } else{
-            System.out.println("False");
-        }
-    }
-
 }

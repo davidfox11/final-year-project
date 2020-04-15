@@ -7,7 +7,7 @@ public class Vertex implements Serializable {
     int[] location;
     Vehicle vehicle;
     Edge incoming;
-    Edge outgoing;
+    Vertex previousVertex;
     String type;
 
     public Vertex(Customer customer, Boolean isPickup){

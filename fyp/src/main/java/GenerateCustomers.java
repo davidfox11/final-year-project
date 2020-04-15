@@ -10,11 +10,15 @@ import java.util.stream.Stream;
 public class GenerateCustomers {
     String filename;
     int customerCount;
+    int maxTimeWindow;
+    int sparsity;
     List<String[]> customers;
 
-    public GenerateCustomers(String filename, int customerCount){
+    public GenerateCustomers(String filename, int customerCount, int maxTimeWindow, int sparsity){
         this.filename = filename;
         this.customerCount = customerCount;
+        this.maxTimeWindow = maxTimeWindow;
+        this.sparsity = sparsity;
         customers = new ArrayList<>();
     }
 
@@ -45,6 +49,9 @@ public class GenerateCustomers {
 
     public String[] generateTimeWindow(){
         // Time window should be between 1hr and 3 hrs
+        int startTimeWindow = 9;
+        int endTimeWindow = 9 + maxTimeWindow;
+        int endTime = endTimeWindow + 2;
         String date = "03-03-2020";
         Random r = new Random();
         int p1=0;
@@ -57,12 +64,18 @@ public class GenerateCustomers {
         String p4String;
         double difference = 0;
         Boolean feasible = false;
-        while (difference < 1 || difference > 3 || !feasible) {
+        while (difference < 1 || difference > maxTimeWindow || !feasible) {
             feasible = false;
+            p1 = r.nextInt((startTimeWindow + sparsity) - startTimeWindow + 1) + startTimeWindow;
+            p2 = r.nextInt(60 + 1);
+            p3 = r.nextInt((endTimeWindow) - (endTimeWindow-sparsity) + 1) + (endTimeWindow-sparsity) + 1;
+            p4 = r.nextInt(60 + 1);
+            /*
             p1 = r.nextInt(14 - 9 + 1) + 9;
             p2 = r.nextInt(60 + 1);
             p3 = r.nextInt(17 - 10 + 1) + 10;
             p4 = r.nextInt(60 + 1);
+             */
             double minuteDifference = Math.abs(p4 - p3);
             minuteDifference = (minuteDifference) / 60;
             difference = (p2 - p1) + minuteDifference;
