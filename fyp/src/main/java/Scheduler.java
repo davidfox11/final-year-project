@@ -252,52 +252,6 @@ public class Scheduler {
         return true;
     }
 
-    public SubGraph swap(SubGraph sg, int i, int j) {
-        Vertex iVertex = sg.get(i);
-        Vertex jVertex = sg.get(j);
-
-        System.out.println("Value for i: " + iVertex.id);
-        System.out.println("Value for j: " + jVertex.id);
-
-        Edge newJEdge = sg.outgoingEdges.get(iVertex).get(0);
-
-        //change the outgoing edge for i
-        //System.out.printf("Removing edge from vertex %s to vertex %s\n", route.outgoingEdges.get(iVertex).get(0).fromVertex.id, route.outgoingEdges.get(iVertex).get(0).toVertex.id);
-        sg.outgoingEdges.get(iVertex).remove(0);
-        //System.out.printf("Adding edge from vertex %s to vertex %s\n", iVertex.id, route.outgoingEdges.get(jVertex).get(0).toVertex.id);
-        sg.outgoingEdges.get(iVertex).add(sg.outgoingEdges.get(jVertex).get(0));
-
-
-        //change the outgoing edge for j
-        //System.out.printf("Removing edge from vertex %s to vertex %s\n", route.outgoingEdges.get(jVertex).get(0).fromVertex.id, route.outgoingEdges.get(jVertex).get(0).toVertex.id);
-        sg.outgoingEdges.get(jVertex).remove(0);
-        //System.out.printf("Adding edge from vertex %s to vertex %s\n", jVertex.id, newJEdge.toVertex.id);
-        sg.outgoingEdges.get(jVertex).add(newJEdge);
-
-        Vertex currentVertex = sg.head;
-        while (sg.getNextVertex(currentVertex) != null) {
-            if (sg.outgoingEdges.get(currentVertex).get(0).toVertex == iVertex) {
-                sg.outgoingEdges.get(currentVertex).remove(0);
-                Edge updatedEdge = new Edge(currentVertex, jVertex, currentVertex.getWeight(jVertex));
-                //System.out.printf("Adding new edge from vertex %s to vertex %s\n", currentVertex.id, jVertex.id);
-                sg.outgoingEdges.get(currentVertex).add(updatedEdge);
-                currentVertex = sg.getNextVertex(currentVertex);
-                continue;
-            }
-            if (sg.outgoingEdges.get(currentVertex).get(0).toVertex == jVertex) {
-                sg.outgoingEdges.get(currentVertex).remove(0);
-                Edge updatedEdge = new Edge(currentVertex, iVertex, currentVertex.getWeight(jVertex));
-                //System.out.printf("Adding new edge from vertex %s to vertex %s\n", currentVertex.id, iVertex.id);
-                sg.outgoingEdges.get(currentVertex).add(updatedEdge);
-            }
-
-            currentVertex = sg.getNextVertex(currentVertex);
-        }
-
-        sg.adjustRoute();
-        return sg;
-    }
-
     public List<SubGraph> interRouteDiscardSwap(List<SubGraph> routes, int n, String objective, int insertionMethod){
         /*
          * Remove n passengers from random vehicles and add to discard pile
@@ -785,29 +739,6 @@ public class Scheduler {
         return alpha*cost - beta*satisfaction;
     }
 
-    public Route createRoute(int routeCount, Vehicle vehicle){
-        /*
-        * Takes list of vehicle assignments and creates new Route object
-        */
-        List<Customer> succession = new ArrayList<>();
-        List<Customer> remainingPassengers = new ArrayList<>();
-        for (Customer customer : vehicle.passengers){
-            succession.add(customer);
-            remainingPassengers.add(customer);
-        }
-        Random r = new Random();
-        int low = 0;
-        while (remainingPassengers.size() != 0){
-            int high = succession.size()-1;
-            int insertAtIndex = r.nextInt((high - low) + 1) + low;
-            Customer nextCustomer = remainingPassengers.remove(r.nextInt((remainingPassengers.size() - 1) + 1));
-            succession.add(insertAtIndex, nextCustomer);
-        }
-        Route route = new Route(routeCount, succession, vehicle);
-        route.generateRoute();
-        return route;
-    }
-
     public int getTotalVehicleCapacity(){
         int capacity = 0;
         for (Vehicle vehicle : vehicles){
@@ -889,41 +820,6 @@ public class Scheduler {
         printJourney(updated);
     }
 
-    public void realTimeInsertionSatisfaction(String customerList, List<SubGraph> journey) throws ParseException {
-        /*
-         * Taking real-time customer orders to see if they can be accommodated
-         * receive order,
-         * add customer to discard pile,
-         * run interRouteDiscardSwap for 5 minutes
-         * new insert method: a parameter for time to insert
-         * limitations: cannot change a customer due for collection in next 20 mins
-         * to discard pile
-         * create new state space
-         */
-        //SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss a", Locale.ENGLISH);
-        //Date converted = formatter.parse("29-12-2019 09:00:00 AM");
-        Boolean added = false;
-        DateTime startTime = new DateTime(2020, 03, 03, 9, 0, 0, 0);
-        List<Customer> realTimeCustomers = parseCustomers(customerList);
-        Random r = new Random();
-        //int insertAt = r.nextInt(discardList.size()-1);
-        //Collections.sort(realTimeCustomers);
-        realTimeCustomers.sort((c1, c2) -> c1.timeWindow[0].compareTo(c2.timeWindow[0]));
-        DateTime lastOrder = new DateTime(2020, 03, 03, 9, 0, 0, 0);
-        List<SubGraph> updated = new ArrayList<>();
-        for (int i=0; i<realTimeCustomers.size(); i++){
-            DateTime orderTime = generateOrderTime(lastOrder, realTimeCustomers.get(i).timeWindow[0]);
-            discardList.add(realTimeCustomers.get(i));
-            /*
-            discardList.add(realTimeCustomers.get(i+1));
-            discardList.add(realTimeCustomers.get(i+2));
-            discardList.add(realTimeCustomers.get(i+3));
-            discardList.add(realTimeCustomers.get(i+4));
-             */
-            updated = realTimeInterRouteDiscardSwapSatisfaction(journey, 5, orderTime);
-        }
-    }
-
     public DateTime generateOrderTime(DateTime startTime, DateTime pickupRequest){
         //DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         //DateTime startTimeNew = dtf.parseDateTime(String.valueOf(startTime));
@@ -935,134 +831,6 @@ public class Scheduler {
         int delay = r.nextInt((diff.getMinutes()+1));
         DateTime newTime = startTime.plusMinutes(delay);
         return newTime;
-    }
-
-    public List<SubGraph> realTimeInterRouteDiscardSwapSatisfaction(List<SubGraph> routes, int n, DateTime orderTime){
-        /*
-         * Remove n passengers from random vehicles and add to discard pile
-         * Go through discard pile - for each passenger, loop through routes
-         * (randomly) and try to insert passenger into route. If they cannot
-         * be inserted, they can remain in the discard pile.
-         */
-        int maxIterations = 1;
-        List<SubGraph> bestOrder = routes;
-        int iterations = 0;
-        int improvements = 0;
-        double bestSatisfaction = getCustomerSatisfaction(routes);
-        List<SubGraph> newOrder;
-        Random rand = new Random();
-        List<SubGraph> changed = new ArrayList<>();
-        List<SubGraph> cannotRemoveMore = new ArrayList<>();
-        try{
-            while (iterations<maxIterations){
-                List<SubGraph> testOrder = new ArrayList<>();
-                for (SubGraph sg : bestOrder){
-                    testOrder.add(SerializationUtils.clone(sg));
-                }
-                //remove n passengers from random graphs
-                while (n>0 && cannotRemoveMore.size() < bestOrder.size()){
-                    //randomly select route
-                    int r1 = rand.nextInt((testOrder.size() - 1) + 1);
-                    SubGraph currentRoute = testOrder.get(r1);
-                    if (cannotRemoveMore.contains(currentRoute)) continue;
-                    if (currentRoute.getSize() <= 2){
-                        cannotRemoveMore.add(currentRoute);
-                        continue;
-                    }
-                    //randomly select customer
-                    int r2 = rand.nextInt((currentRoute.getSize() - 2) + 1);
-                    try{
-                        int[] firstRoutePassengerLocations = getCustomerVertexes(currentRoute, r2);
-                        Vertex[] vertexPairs = currentRoute.removePassenger(firstRoutePassengerLocations[0], firstRoutePassengerLocations[1]);
-                        if (vertexPairs == null || vertexPairs.length == 0){
-                            n --;
-                            continue;
-                        }
-                        discardList.add(vertexPairs[0].customer);
-                        //System.out.printf("Customer %d added to discard pile\n", vertexPairs[0].customer.id);
-                        n --;
-                    } catch (OutOfMemoryError e){
-                        n --;
-                        continue;
-                    }
-                }
-
-                //remove duplicates from discard pile
-                List<Customer> alreadyPresent = new ArrayList<>();
-                for (int i=0;i<discardList.size();i++){
-                    if (alreadyPresent.contains(discardList.get(i))){
-                        discardList.remove(i);
-                        i --;
-                    } else{
-                        alreadyPresent.add(discardList.get(i));
-                    }
-                }
-
-                List<SubGraph> finalList = new ArrayList<>();
-                for (Iterator<Customer> iterator = discardList.iterator(); iterator.hasNext(); ) {
-                    Customer currentCustomer = iterator.next();
-                    int i = 0;
-                    int r1 = rand.nextInt((testOrder.size() - 1) + 1);
-                    while (i < testOrder.size()){
-                        SubGraph sg = testOrder.get(r1);
-                        List<Customer> currentCustomerList = insertRealTime(currentCustomer, sg, sg.route.vehicle.capacity, orderTime);
-                        if (currentCustomerList != null){
-                            //System.out.printf("Successfully added customer %d to route %s\n", currentCustomer.id, sg.id);
-                            currentCustomerList = removeDuplicates(currentCustomerList);
-                            testOrder.remove(sg);
-                            //System.out.printf("Route %d size: %d", sg.id, currentCustomerList.size());
-                            Route r = new Route(sg.route.id, currentCustomerList, sg.route.vehicle);
-                            //sg.route.succession = currentCustomerList;
-                            r.generateRoute();
-                            //System.out.printf("Route %d size: %d", r.id, r.succession.size());
-                            SubGraph sgNew = new SubGraph(sg.id);
-                            sgNew.fillRoutes(r);
-                            //System.out.printf("Route %d graph size: %d, list size: %d", sgNew.id, sgNew.getSize(), sgNew.route.succession.size());
-                            testOrder.add(sgNew);
-
-                        /*
-                        sg.route.succession = currentCustomerList;
-                        System.out.println(sg.route.succession.size());
-                        sg.route.generateRoute();
-                        System.out.println(sg.route.succession.size());
-                        sg.fillRoutes(sg.route);
-                        System.out.println(sg.route.succession.size());
-                        System.out.println(sg.printGraph());
-                         */
-
-                            changed.add(sg);
-                            //discardList.remove(currentCustomer);
-                            iterator.remove();
-                            //System.out.println("Discard list size: "+discardList.size());
-                            break;
-                        } else{
-                            if (r1 == testOrder.size()-1){
-                                r1 = 0;
-                            } else {
-                                r1 ++;
-                            }
-                        }
-                        i ++;
-                    }
-                    interRouteSwapChanges = changed;
-                }
-
-                double satisfaction = getCustomerSatisfaction(testOrder);
-                if (satisfaction < bestSatisfaction){
-                    improvements ++;
-                    bestSatisfaction = satisfaction;
-                    bestOrder = testOrder;
-                }
-                iterations ++;
-            }
-            //System.out.println("Improvements made: " + improvements);
-            interRouteImprovements = improvements;
-
-            return bestOrder;
-        } catch (NullPointerException e){
-            return null;
-        }
-
     }
 
     public List<SubGraph> realTimeInterRouteDiscardSwap(List<SubGraph> routes, int n, DateTime orderTime){

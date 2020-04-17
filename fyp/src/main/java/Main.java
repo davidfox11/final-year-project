@@ -83,7 +83,7 @@ public class Main {
                 ils.objective = "score";
                 ils.insertionMethod = 2;
                 ils.swapMethod = new int[]{5, 10};
-                ils.optimiseCost();
+                ils.optimise();
                 br.write(ils.finalMsg);
                 System.out.println(ils.finalMsg);
                 printProgress(progressCount, 32);
@@ -183,6 +183,6 @@ public class Main {
          */
         //ils.generateNewOrders = true;
 
-        ils.optimiseCost();
+        ils.optimise();
     }
 }

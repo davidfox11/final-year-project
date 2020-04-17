@@ -77,7 +77,7 @@ public class IteratedLocalSearch {
         }
     }
 
-    public List<SubGraph> optimiseCost() throws IOException, ParseException, InterruptedException {
+    public List<SubGraph> optimise() throws IOException, ParseException, InterruptedException {
         if (generateNewOrders){
             CustomerGenerator generator = new CustomerGenerator(customers, customerCount, maxTimeWindow, sparsity);
             generator.generate();
@@ -436,7 +436,7 @@ public class IteratedLocalSearch {
         }
         long startTime = System.currentTimeMillis();
         ils.objective = "score";
-        List<SubGraph> newRoute = ils.optimiseCost();
+        List<SubGraph> newRoute = ils.optimise();
         ils.scheduler.printJourney(newRoute);
         //System.out.println(ils.costMsg);
         ils.printRoutes();
