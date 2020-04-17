@@ -7,14 +7,14 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class GenerateCustomers {
+public class CustomerGenerator {
     String filename;
     int customerCount;
     int maxTimeWindow;
     int sparsity;
     List<String[]> customers;
 
-    public GenerateCustomers(String filename, int customerCount, int maxTimeWindow, int sparsity){
+    public CustomerGenerator(String filename, int customerCount, int maxTimeWindow, int sparsity){
         this.filename = filename;
         this.customerCount = customerCount;
         this.maxTimeWindow = maxTimeWindow;

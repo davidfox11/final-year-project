@@ -18,261 +18,274 @@ public class IteratedLocalSearch {
      * Maintain the route with the lowest cost
      */
     File results;
+    String preTimeCustomerFile;
     String realTimeCustomers;
     int customerCount;
     FileWriter fr;
     BufferedWriter br;
-    String costMsg = "";
+    String finalMsg = "";
     String satisfactionMsg = "";
     int n;
+    int preTime;
     int improvements = 0;
-    String inputFile;
     List<SubGraph> bestAllocation;
     double lowestCost;
     double customerSatifaction = 0;
     Scheduler scheduler = new Scheduler();
     double keepFactor; //the percentage of passengers to keep from previous solution, 0-1
     List<SubGraph> firstAllocation = new ArrayList<>();
+    String objective;
+    int maxTimeWindow;
+    int sparsity;
+    int fleetSize;
+    int vehicleCapacity;
+    Boolean realTime;
+    int insertionMethod = 1;
+    int[] swapMethod = new int[]{4, 10};
+    Boolean printRoutes = false;
+    Boolean jComponent = false;
+    Boolean generateNewOrders = false;
+    String customers;
+    String inputFile;
 
-    public IteratedLocalSearch(int iterations, double keepFactor, String inputFile, String resultsFile, int customerCount, int fleetSize, int vehicleCapacity, int maxTimeWindow, int sparsity) throws IOException {
-        this.n = iterations*60;
+    public IteratedLocalSearch(int maxTime, double keepFactor, String inputFile, String resultsFile, int customerCount, int fleetSize, int vehicleCapacity, int maxTimeWindow, int sparsity) throws IOException {
+        this.n = maxTime*60;
+        this.maxTimeWindow = maxTimeWindow;
+        this.sparsity = sparsity;
+        this.fleetSize = fleetSize;
+        this.vehicleCapacity = vehicleCapacity;
         //results = new File(resultsFile);
-        String customers = "../customers/"+inputFile;
-        //fr = new FileWriter(results);
-        //br = new BufferedWriter(fr);
-        //GenerateCustomers generator = new GenerateCustomers(customers, customerCount, maxTimeWindow, sparsity);
-        //generator.generate();
+        customers = "../customers/"+inputFile;
         //REAL-TIME ONLY
+        objective = "cost";
+        realTime = false;
+        this.inputFile = inputFile;
 
         this.customerCount = customerCount;
-        int preTime = customerCount/2;
-        String preTimeCustomerFile = "../customers/preTime/"+inputFile;
-        //GenerateCustomers generator = new GenerateCustomers(preTimeCustomerFile, preTime, maxTimeWindow, sparsity);
-        //generator.generate();
+        preTime = customerCount/2;
+        preTimeCustomerFile = "../customers/preTime/"+inputFile;
+
+        if (jComponent){
+            Plot myPlot = new Plot("Passenger Distribution",0,400,2,0,400,2);
+            for (Customer customer : scheduler.customers){
+                myPlot.setColor(scheduler.generateColor());
+                myPlot.addPoint(customer.startPoint[0], customer.startPoint[1]);
+                myPlot.setConnected(true);
+                myPlot.addPoint(customer.endPoint[0], customer.endPoint[1]);
+                myPlot.setConnected(false);
+            }
+        }
+    }
+
+    public List<SubGraph> optimiseCost() throws IOException, ParseException, InterruptedException {
+        if (generateNewOrders){
+            CustomerGenerator generator = new CustomerGenerator(customers, customerCount, maxTimeWindow, sparsity);
+            generator.generate();
+        }
+        /* The following code generates new files, should be disabled for evaluations */
+        if (generateNewOrders && realTime){
+            CustomerGenerator generator = new CustomerGenerator(preTimeCustomerFile, preTime, maxTimeWindow, sparsity);
+            generator.generate();
+            CustomerGenerator realTimeGenerator = new CustomerGenerator(realTimeCustomers, preTime, maxTimeWindow, sparsity);
+            realTimeGenerator.generate();
+        }
         realTimeCustomers = "../customers/realTime/"+inputFile;
-        //GenerateCustomers realTimeGenerator = new GenerateCustomers(realTimeCustomers, preTime, maxTimeWindow, sparsity);
-        //realTimeGenerator.generate();
 
 
         this.keepFactor = keepFactor;
         scheduler.vehicles = scheduler.populateFleet(fleetSize, vehicleCapacity);
         //results = new File("../tests/test1.txt");
-        costMsg += "************************************************************\n";
-        // += "************************************************************\n";
-        costMsg += String.format("NEW TEST - OPTIMIZING COST:\nNumber of iterations: %d\nVehicle Size: %d\nNumber of Vehicles: %d\nCustomer orders: %d orders from %s\nTime window: Max Time window: %d Sparsity: %d\n",
-                iterations, vehicleCapacity, fleetSize, customerCount, inputFile, maxTimeWindow, sparsity);
-        //satisfactionMsg += String.format("NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:\nNumber of iterations: %d\nVehicle Size: %d\nNumber of Vehicles: %d\nCustomer orders: %d orders from %s\nTime window: Max Time window: %d Sparsity: %d\n",
-        //        iterations, vehicleCapacity, fleetSize, customerCount, inputFile, maxTimeWindow, sparsity);
+        finalMsg += "************************************************************\n";
+        finalMsg += String.format("NEW TEST\nMaximum runtime: %d min\nVehicle Size: %d\nNumber of Vehicles: %d\nCustomer orders: %d orders from %s\nTime window: Max Time window: %d Sparsity: %d\n",
+                n/60, vehicleCapacity, fleetSize, customerCount, inputFile, maxTimeWindow, sparsity);
         //br.write(setup);
         // CONFIGURATION - INPUT FILE
-        scheduler.customers = scheduler.parseCustomers(customers);
-    }
+        String customerInput = customers;
+        if (realTime) customerInput = preTimeCustomerFile;
+        scheduler.customers = scheduler.parseCustomers(customerInput);
 
-    public List<SubGraph> optimiseCost() throws IOException, ParseException {
         int iterations = 0;
         long currentTime;
+        Map<String, Double> initialResults = new HashMap<>();
+        Map<String, Double> finalResults = new HashMap<>();
         double bestCustomerSatisfaction = 0;
-        int maxIterations = 1;
-        List<SubGraph> previousResult = new ArrayList<>();
-        List<SubGraph> currentJourney;
-        String progressBar;
-        int progress;
-        double initialCost;
-        List<SubGraph> updatedJourney = new ArrayList<>();
-        progressBar = "<----------------------------------------------------------------------------------------------------> 0.0%";
-        //System.out.println(progressBar);
-        long startTime = System.currentTimeMillis();
-        currentTime = 0;
-        try{
-            while (currentTime < n){
-                //printProgress(currentTime, n);
-                if (iterations == 0 || keepFactor == 0){
-                    currentJourney = getNewSolution();
-                    if (iterations == 0){
-                        //scheduler.printJourney(currentJourney);
-                        initialCost = scheduler.score(currentJourney);
-                        firstAllocation = currentJourney;
-                        lowestCost = initialCost;
-                        costMsg += ("Initial cost: "+ lowestCost);
-                    }
-
-                } else{
-                    int customersToRemove = (int) (scheduler.customers.size()/(1-keepFactor));
-                    //scheduler.printJourney(previousResult);
-                    System.out.println("Removing "+customersToRemove+" customers");
-                    //currentJourney = removeNCustomers(previousResult, customersToRemove);
-                    currentJourney = scheduler.interRouteDiscardSwap(previousResult, 10);
-                    scheduler.printJourney(currentJourney);
-                    break;
-                }
-
-                updatedJourney = copyJourney(currentJourney);
-
-                int numRoutes = updatedJourney.size();
-                List<SubGraph> afterLocalSearch = new ArrayList<>();
-                for (SubGraph sg : updatedJourney){
-                    SubGraph newGraph = scheduler.twoOptSearchAlt(sg);
-                    Route r = newGraph.adjustRoute();
-                    newGraph.fillRoutes(r);
-                    afterLocalSearch.add(newGraph);
-                }
-                updatedJourney = copyJourney(afterLocalSearch);
-                double newCost = scheduler.getTotalJourneyCost(updatedJourney);
-
-                // CONFIGURATION - INTER ROUTE SWAP COST
-                updatedJourney = scheduler.interRouteDiscardSwap(updatedJourney,10);
-
-                for (SubGraph sg : updatedJourney){
-                    int originalSize = sg.route.succession.size();
-
-                    List<Customer> newList = scheduler.removeDuplicates(sg.route.succession);
-                    if (newList.size() != originalSize){
-                        sg.route.succession = newList;
-                        sg.route.generateRoute();
-                        sg.fillRoutes(sg.route);
-                    }
-
-                }
-
-                if (scheduler.score(updatedJourney) < lowestCost){
-                    improvements ++;
-                    bestAllocation = copyJourney(updatedJourney);
-                    lowestCost = scheduler.score(updatedJourney);
-                    //bestCustomerSatisfaction = scheduler.getCustomerSatisfaction(updatedJourney);
-                }
-
-
-                iterations ++;
-                long newTime = System.currentTimeMillis();
-                currentTime = (newTime-startTime)/1000;
-            }
-
-            long endTime = System.currentTimeMillis();
-            long totalTime = endTime - startTime;
-            double minsPerIteration = (double)(totalTime/1000)/iterations;
-            costMsg += String.format("\nFinal cost: %.2f\nCustomer Satisfaction: %.2f\nTotal of %d improvements after %d iterations\nAverage time for each iteration: %.2f seconds\n", lowestCost, bestCustomerSatisfaction, improvements, iterations, minsPerIteration);
-/*
-            String realTime = "Beginning real-time insertion....";
-            scheduler.realTimeInsertion(realTimeCustomers, bestAllocation);
-            double costAfterRt = scheduler.getTotalJourneyCost(updatedJourney);
-            double satisfactionAfterRt = scheduler.getCustomerSatisfaction(updatedJourney);
-            costMsg += String.format("Inserted %d real-time customers\nOverall cost: %.2f\nOverall satisfaction %.2f\n", customerCount/2, costAfterRt, satisfactionAfterRt);
-            scheduler.printJourney(bestAllocation);
-*/
-
-
-        } catch (NullPointerException e){
-            e.printStackTrace();
-            costMsg += "NPE. End";
-
-
-        }
-
-        return bestAllocation;
-
-    }
-
-    public List<SubGraph> optimiseSatisfaction() throws IOException, ParseException {
-        int iterations = 0;
-        long currentTime;
-        double bestCustomerSatisfaction = 0;
-        double initialCustomerSatisfaction = 0;
         int maxIterations = 1;
         List<SubGraph> previousResult = new ArrayList<>();
         List<SubGraph> currentJourney;
         String progressBar;
         int progress;
         double initialCost = 0;
+        double initialSatisfaction = 0;
+        double initialScore = 0;
         List<SubGraph> updatedJourney = new ArrayList<>();
-        //progressBar = "<----------------------------------------------------------------------------------------------------> 0.0%";
+        progressBar = "<----------------------------------------------------------------------------------------------------> 0.0%";
         //System.out.println(progressBar);
         long startTime = System.currentTimeMillis();
         currentTime = 0;
-        try{
-            while (currentTime < n){
-                //printProgress(currentTime, n);
-                if (iterations == 0 || keepFactor == 0){
+
+        finalMsg += String.format("OPTIMIZING %s\n", objective.toUpperCase());
+
+        while (currentTime < n) {
+            try {
+                if (iterations == 0 || keepFactor == 0) {
                     currentJourney = getNewSolution();
-
-                    if (iterations == 0){
-                        initialCustomerSatisfaction = scheduler.getCustomerSatisfaction(currentJourney);
-                        firstAllocation = currentJourney;
-                        bestCustomerSatisfaction = initialCustomerSatisfaction;
-                        //satisfactionMsg += ("Initial Customer Satisfaction: "+ bestCustomerSatisfaction);
-                        //System.out.println("INITIAL JOURNEY");
+                    if (iterations == 0) {
                         //scheduler.printJourney(currentJourney);
+                        initialCost = scheduler.getTotalJourneyCost(currentJourney);
+                        initialSatisfaction = scheduler.getCustomerSatisfaction(currentJourney);
+                        initialScore = scheduler.score(currentJourney);
+                        firstAllocation = currentJourney;
+                        lowestCost = initialCost;
+
+                        initialResults.put("cost", initialCost);
+                        initialResults.put("satisfaction", initialSatisfaction);
+                        initialResults.put("score", initialScore);
+
+                        finalMsg += String.format("Initial %s: %.2f\n", objective, initialResults.get(objective));
+                        System.out.println(finalMsg);
                     }
-
-                } else{
-                    int customersToRemove = (int) (scheduler.customers.size()/(1-keepFactor));
-                    currentJourney = removeNCustomers(previousResult, customersToRemove);
+                } else {
+                    int customersToRemove = (int) (scheduler.customers.size() / (1 - keepFactor));
+                    //scheduler.printJourney(previousResult);
+                    System.out.println("Removing " + customersToRemove + " customers");
+                    //currentJourney = removeNCustomers(previousResult, customersToRemove);
+                    currentJourney = scheduler.interRouteDiscardSwap(previousResult, 10, objective, insertionMethod);
+                    scheduler.printJourney(currentJourney);
+                    break;
                 }
 
-                updatedJourney = copyJourney(currentJourney);
-                int numRoutes = updatedJourney.size();
-                List<SubGraph> afterLocalSearch = new ArrayList<>();
-                for (SubGraph sg : updatedJourney){
-                    SubGraph newGraph = scheduler.twoOptSearchAlt(sg);
-                    Route r = newGraph.adjustRoute();
-                    newGraph.fillRoutes(r);
-                    afterLocalSearch.add(newGraph);
-                }
-                updatedJourney = copyJourney(afterLocalSearch);
-                double newCost = scheduler.getTotalJourneyCost(updatedJourney);
-                // CONFIGURATION - INTER ROUTE SWAP SATISFACTION
-                updatedJourney = scheduler.interRouteDiscardSwapSatisfaction(updatedJourney,10);
-                for (SubGraph sg : updatedJourney){
-                    int originalSize = sg.route.succession.size();
+
+                //printProgress(currentTime, n);
+
                 /*
-                if (removeDuplicates(sg.route.succession)){
-                    sg.route.generateRoute();
-                    sg.fillRoutes(sg.route);
-                }
-                 */
-                    List<Customer> newList = scheduler.removeDuplicates(sg.route.succession);
-                    if (newList.size() != originalSize){
-                        sg.route.succession = newList;
-                        sg.route.generateRoute();
-                        sg.fillRoutes(sg.route);
+                if (its == 0) {
+                    if (keepFactor == 0) {
+                        currentJourney = getNewSolution();
+                        //scheduler.printJourney(currentJourney);
+                        initialCost = scheduler.score(currentJourney);
+                        initialSatisfaction = scheduler.getCustomerSatisfaction(currentJourney);
+                        initialScore = scheduler.score(currentJourney);
+                        firstAllocation = currentJourney;
+                        lowestCost = initialCost;
+                    } else {
+                        int customersToRemove = (int) (scheduler.customers.size() / (1 - keepFactor));
+                        //scheduler.printJourney(previousResult);
+                        System.out.println("Removing " + customersToRemove + " customers");
+                        //currentJourney = removeNCustomers(previousResult, customersToRemove);
+                        currentJourney = scheduler.interRouteDiscardSwap(previousResult, 10, objective);
+                        initialCost = scheduler.score(currentJourney);
+                        initialSatisfaction = scheduler.getCustomerSatisfaction(currentJourney);
+                        initialScore = scheduler.score(currentJourney);
+                        break;
                     }
 
+                    initialResults.put("cost", initialCost);
+                    initialResults.put("satisfaction", initialSatisfaction);
+                    initialResults.put("score", initialScore);
+
+                    finalMsg += String.format("Initial %s: %.2f\n", objective, initialResults.get(objective));
+                    System.out.println(finalMsg);
                 }
 
-                if (scheduler.getCustomerSatisfaction(updatedJourney) > bestCustomerSatisfaction){
-                    improvements ++;
-                    bestAllocation = copyJourney(updatedJourney);
-                    lowestCost = scheduler.getTotalJourneyCost(updatedJourney);
-                    bestCustomerSatisfaction = scheduler.getCustomerSatisfaction(updatedJourney);
-                }
+                 */
 
-                iterations ++;
-                long newTime = System.currentTimeMillis();
-                currentTime = (newTime-startTime)/1000;
+                    updatedJourney = copyJourney(currentJourney);
+
+                    int numRoutes = updatedJourney.size();
+                    List<SubGraph> afterLocalSearch = new ArrayList<>();
+                    for (SubGraph sg : updatedJourney) {
+                        SubGraph newGraph = scheduler.twoOptSearchAlt(sg);
+                        Route r = newGraph.adjustRoute();
+                        newGraph.fillRoutes(r);
+                        afterLocalSearch.add(newGraph);
+                    }
+                    updatedJourney = copyJourney(afterLocalSearch);
+                    double newCost = scheduler.getTotalJourneyCost(updatedJourney);
+
+                    // CONFIGURATION - INTER ROUTE SWAP COST
+                    if (swapMethod[0] == 4){
+                        updatedJourney = scheduler.oneToManySwap(updatedJourney, swapMethod[1], objective, insertionMethod);
+                    } else if (swapMethod[0] == 3){
+                        updatedJourney = scheduler.swapBetweenRoutes(updatedJourney, swapMethod[1], objective, insertionMethod);
+                    } else if (swapMethod[0] == 5){
+                        updatedJourney = scheduler.interRouteDiscardSwap(updatedJourney, swapMethod[1], objective, insertionMethod);
+                    } else{
+                        updatedJourney = scheduler.interRouteDiscardSwap(updatedJourney, 10, objective, insertionMethod);
+                    }
+
+                    for (SubGraph sg : updatedJourney) {
+                        int originalSize = sg.route.succession.size();
+
+                        List<Customer> newList = scheduler.removeDuplicates(sg.route.succession);
+                        if (newList.size() != originalSize) {
+                            sg.route.succession = newList;
+                            sg.route.generateRoute();
+                            sg.fillRoutes(sg.route);
+                        }
+
+                    }
+
+                    if (scheduler.score(updatedJourney) < lowestCost) {
+                        improvements++;
+                        bestAllocation = copyJourney(updatedJourney);
+                        lowestCost = scheduler.score(updatedJourney);
+                        //bestCustomerSatisfaction = scheduler.getCustomerSatisfaction(updatedJourney);
+                    }
+
+
+
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+                finalMsg += "NPE. End";
             }
 
-            long endTime = System.currentTimeMillis();
-            long totalTime = endTime - startTime;
-            double minsPerIteration = (double)(totalTime/1000)/iterations;
-            //satisfactionMsg += String.format("\nFinal cost: %.2f\nCustomer Satisfaction: %.2f\nTotal of %d improvements after %d iterations\nAverage time for each iteration: %.2f seconds\n", lowestCost, bestCustomerSatisfaction, improvements, iterations, minsPerIteration);
-            satisfactionMsg += bestCustomerSatisfaction+"\n";
-            //FOR REAL TIME INSERTION
-/*
-            String realTime = "Beginning real-time insertion....";
-            scheduler.realTimeInsertionSatisfaction(realTimeCustomers, bestAllocation);
-            double costAfterRt = scheduler.getTotalJourneyCost(updatedJourney);
-            double satisfactionAfterRt = scheduler.getCustomerSatisfaction(updatedJourney);
-            satisfactionMsg += String.format("Inserted %d real-time customers\nOverall cost: %.2f\nOverall satisfaction %.2f\n", customerCount/2, costAfterRt, satisfactionAfterRt);
-
-            satisfactionMsg += "************************************************************\n\n";
-*/
-
-        } catch (NullPointerException e){
-            satisfactionMsg += "NPE. End";
-            e.printStackTrace();
-            return bestAllocation;
+            iterations++;
+            long newTime = System.currentTimeMillis();
+            currentTime = (newTime - startTime) / 1000;
         }
+
+        System.out.println("Time is up");
+        System.out.println(iterations);
+        long endTime = System.currentTimeMillis();
+        long totalTime = endTime - startTime;
+        double minsPerIteration = (double)(totalTime/1000)/iterations;
+        double finalCost =  scheduler.getTotalJourneyCost(bestAllocation);
+        double finalSatisfaction = scheduler.getCustomerSatisfaction(bestAllocation);
+        double finalScore = scheduler.score(bestAllocation);
+        finalResults.put("cost", finalCost);
+        finalResults.put("satisfaction", finalSatisfaction);
+        finalResults.put("score", finalScore);
+        finalMsg += String.format("\nFinal %s: %.2f\nTotal of %d improvements after %d iterations\nAverage time for each iteration: %.2f seconds\n", objective, finalResults.get(objective), improvements, iterations, minsPerIteration);
+        System.out.println(finalMsg);
+        if (realTime){
+            try{
+                finalMsg += "Beginning real-time insertion....";
+                scheduler.realTimeInsertion(realTimeCustomers, bestAllocation);
+                finalCost =  scheduler.getTotalJourneyCost(bestAllocation);
+                finalSatisfaction = scheduler.getCustomerSatisfaction(bestAllocation);
+                finalScore = scheduler.score(bestAllocation);
+                finalResults.replace("cost", finalCost);
+                finalResults.replace("satisfaction", finalSatisfaction);
+                finalResults.replace("score", finalScore);
+                double costAfterRt = scheduler.getTotalJourneyCost(updatedJourney);
+                double satisfactionAfterRt = scheduler.getCustomerSatisfaction(updatedJourney);
+                finalMsg += String.format("Inserted %d real-time customers\nOverall %s: %.2f\n", customerCount/2, objective,  finalResults.get(objective));
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+
+        }
+
+        if (printRoutes) scheduler.printJourney(bestAllocation);
+        System.out.println(finalMsg);
+        if (jComponent) printRoutes();
+
+
         return bestAllocation;
+
     }
+
 
     public void printProgress(long currentTime, int n){
         int progressDashes = 100;
@@ -325,7 +338,7 @@ public class IteratedLocalSearch {
     }
 
     public List<SubGraph> getNewSolution(){
-        List<Route> routes = scheduler.generateSolution();
+        List<Route> routes = scheduler.generateSolution(insertionMethod);
         Graph graph = new Graph(scheduler.customers, scheduler.vehicles);
         for (int i=0;i<routes.size();i++){
             SubGraph sg = graph.createSubGraph(routes.get(i));
@@ -369,7 +382,7 @@ public class IteratedLocalSearch {
             int r1 = rand.nextInt((newOrder.size() - 1) + 1);
             while (i < newOrder.size()){
                 SubGraph sg = newOrder.get(r1);
-                List<Customer> currentCustomerList = scheduler.insertCustomer(currentCustomer, sg.route.succession, sg.route.vehicle.capacity);
+                List<Customer> currentCustomerList = scheduler.insertCustomer(currentCustomer, sg.route.succession, sg.route.vehicle.capacity, insertionMethod);
                 if (currentCustomerList != null){
                     System.out.printf("Successfully added customer %d to route %s\n", currentCustomer.id, sg.id);
                     sg.route.succession = currentCustomerList;
@@ -412,7 +425,7 @@ public class IteratedLocalSearch {
 
     public static void main(String[] args) throws IOException, InterruptedException, ParseException {
         //int iterations, double keepFactor, String inputFile, int customerCount, int fleetSize, int vehicleCapacity
-        IteratedLocalSearch ils = new IteratedLocalSearch(10, 0, "customers2.csv", "../tests/test11.txt", 30, 5, 6, 3, 2);
+        IteratedLocalSearch ils = new IteratedLocalSearch(1, 0, "customers2.csv", "../tests/test11.txt", 30, 5, 6, 3, 2);
         Plot myPlot = new Plot("Passenger Distribution",0,400,2,0,400,2);
         for (Customer customer : ils.scheduler.customers){
             myPlot.setColor(ils.scheduler.generateColor());
@@ -422,6 +435,7 @@ public class IteratedLocalSearch {
             myPlot.setConnected(false);
         }
         long startTime = System.currentTimeMillis();
+        ils.objective = "score";
         List<SubGraph> newRoute = ils.optimiseCost();
         ils.scheduler.printJourney(newRoute);
         //System.out.println(ils.costMsg);
