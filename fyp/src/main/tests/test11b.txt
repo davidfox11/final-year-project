@@ -1,0 +1,12 @@
+************************************************************
+NEW TEST - OPTIMIZING COST:
+Number of iterations: 40
+Vehicle Size: 6
+Number of Vehicles: 5
+Customer orders: 60 orders from customers3.csv
+Time window: Max Time window: 3 Sparsity: 2
+Initial cost: 763.9113438986728
+Final cost: 455.94
+Customer Satisfaction: 0.00
+Total of 6 improvements after 306 iterations
+Average time for each iteration: 7.87 seconds

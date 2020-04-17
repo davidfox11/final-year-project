@@ -23,7 +23,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws ParseException, IOException {
-        run("../tests/test11b.txt");
+        run("../tests/test30.txt");
     }
 
     public static void run(String resultsFile) throws ParseException, IOException {
