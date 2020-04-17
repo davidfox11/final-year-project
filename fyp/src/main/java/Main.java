@@ -23,7 +23,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws ParseException, IOException {
-        run("../tests/test30.txt");
+        run("../tests/test11c.txt");
     }
 
     public static void run(String resultsFile) throws ParseException, IOException {
@@ -71,7 +71,7 @@ public class Main {
         };
         printProgress(0, 32);
         int progressCount = 1;
-        for (int j=40; j<=40; j+=10){
+        for (int j=50; j<=50; j+=10){
             int i = 2;
             String inputFile = String.format("customers%d.csv", i+1);
             IteratedLocalSearch ils = new IteratedLocalSearch(j, changes[i][1], inputFile, "../tests/test1.txt", changes[i][2], changes[i][3], changes[i][4], changes[i][5], changes[i][6]);

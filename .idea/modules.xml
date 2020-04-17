@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/final-year-project.iml" filepath="$PROJECT_DIR$/.idea/final-year-project.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/final-year-project.fyp.main.iml" filepath="$PROJECT_DIR$/.idea/modules/final-year-project.fyp.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/final-year-project.fyp.test.iml" filepath="$PROJECT_DIR$/.idea/modules/final-year-project.fyp.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/fyp.iml" filepath="$PROJECT_DIR$/.idea/modules/fyp.iml" />
     </modules>
   </component>
