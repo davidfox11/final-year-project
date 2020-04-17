@@ -344,7 +344,7 @@ Initial Customer Satisfaction: 0.6052906034024456
 Final cost: 3935.40
 Customer Satisfaction: 0.71
 Total of 5 improvements after 222 iterations
-Average time for each iteration: 3.24 seconds
+Average time for each iteration: 0.79 seconds
 Inserted 20 real-time customers
 Overall cost: 3852.00
 Overall satisfaction 0.68

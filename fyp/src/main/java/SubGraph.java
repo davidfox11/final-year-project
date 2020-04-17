@@ -122,6 +122,7 @@ public class SubGraph implements Serializable
                     satisfaction = 1;
                 } else{
                     satisfaction = (1-(actualDistance-idealDistance)/actualDistance)+.3;
+                    if (satisfaction > 1) satisfaction = 1;
                 }
                 //System.out.println(satisfaction);
                 total[pos] = satisfaction;
@@ -361,7 +362,7 @@ public class SubGraph implements Serializable
         Vertex nextVertex;
         List<Integer> collectedCustomers = new ArrayList<>();
         DateTimeFormatter dtfOut = DateTimeFormat.forPattern("HH:mm:ss");
-        String message = String.format("************************ GRAPH %d ************************\n", id);
+        String message = String.format("************************ VEHICLE %d ************************\n", id);
         message += String.format("*\tPICKUP: Customer %d at [%d, %d]. TIME: %s WAIT TIME: %d minutes\n", current.customer.id, current.customer.startPoint[0], current.customer.startPoint[1], dtfOut.print(current.customer.timeWindow[0]), current.customer.waitTime);
         collectedCustomers.add(current.customer.id);
         while (getNextVertex(current) != null){

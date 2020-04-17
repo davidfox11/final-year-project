@@ -328,67 +328,6 @@ public class Scheduler {
         return sg;
     }
 
-    public SubGraph twoOptSearch(SubGraph sg){
-        /*
-         * Main local search method
-         */
-        SubGraph newRoute;
-        double bestScore = score(sg);
-        double newScore;
-        int swaps = 1;
-        int improve = 0;
-        int iterations = 0;
-        long comparisons = 0;
-
-        while (swaps != 0) { //loop until no improvements are made.
-            swaps = 0;
-
-            Vertex currentVertex = sg.head;
-            System.out.println(sg.size);
-            for (int i = 1; i < sg.size/2 - 2; i++) {
-                for (int j = i + 1; j < sg.size/2 - 1; j++) {
-                    System.out.println(j);
-                    if (sg.outgoingEdges.get(sg.get(j)) == null) break;
-                    comparisons++;
-                    //System.out.printf("Edge for vector %s: %d\n", sg.get(i-1).id, sg.outgoingEdges.get(sg.get(i - 1)).get(0).weight);
-                    //System.out.printf("Edge for vector %s: %d\n", sg.get(j).id, sg.outgoingEdges.get(sg.get(j)).get(0).weight);
-                    //System.out.printf("Edge for vector %s: %d\n", sg.get(i).id, sg.outgoingEdges.get(sg.get(i)).get(0).weight);
-                    //System.out.printf("Edge for vector %s: %d\n\n", sg.get(j).id, sg.outgoingEdges.get(sg.get(j)).get(0).weight);
-                    if ((sg.outgoingEdges.get(sg.get(i - 1)).get(0).weight + sg.outgoingEdges.get(sg.get(j)).get(0).weight) >=
-                            (sg.distance(sg.get(i), sg.get(j + 1)) + sg.distance(sg.get(i - 1), sg.get(j)))) {
-
-                        System.out.printf("Swapping vertex %s with vertex %s in the route\n", sg.get(i).id, sg.get(j).id);
-                        newRoute = swap(sg, i, j);
-                        newScore = score(newRoute);
-
-                        if (newScore > bestScore) {
-                            System.out.println("Score has improved");
-                            sg = newRoute;
-                            bestScore = newScore;
-                            swaps++;
-                            improve++;
-                        }
-                    }
-                }
-            }
-            iterations++;
-        }
-        System.out.println("Total comparisons made: " + comparisons);
-        System.out.println("Total improvements made: " + improve);
-        System.out.println("Total iterations made: " + iterations);
-        return sg;
-    }
-
-    public double getAverageRouteScore(List<SubGraph> routes){
-        double totalScores = 0;
-        int listSize = routes.size();
-
-        for (SubGraph sg : routes){
-            totalScores += score(sg);
-        }
-
-        return totalScores/listSize;
-    }
 
     public List<SubGraph> interRouteDiscardSwap(List<SubGraph> routes, int n){
         /*
@@ -1246,48 +1185,17 @@ public class Scheduler {
         return sg;
     }
 
-    public double score(SubGraph sg){
+    public double score(List<SubGraph> journey){
         /*
          * CURRENT FORMULA
          * (total distance travelled)*(avg travel efficiency)^2
          */
-        double totalWaitTimeEfficiency = 1;
-        double totalTravelEfficiency = 0;
-        Vertex current = sg.head;
-        double distanceTravelled = current.customer.distance(sg.route.vehicle.startPoint);
-        Vertex nextVertex;
-        double idealDistanceSum = 0;
-        double actualDistanceSum = 0;
-        while (sg.getNextVertex(current) != null){
-            nextVertex = sg.getNextVertex(current);
-            //System.out.printf("Calculating stats for vertex %s\n", nextVertex.id);
-            if (nextVertex.type.equals("dropoff")) {
-                //System.out.println("Getting ideal travel distance...");
-                double idealTravelDistance = nextVertex.customer.distance(nextVertex.customer.endPoint);
-                idealDistanceSum += idealTravelDistance;
-                //System.out.println("Getting actual travel distance...");
-                double actualTravelDistance = sg.getActualTravelDistance(nextVertex);
-                actualDistanceSum += actualTravelDistance;
-                //System.out.println("Getting travel efficiency...");
-                double travelEfficiency = 1 - ((actualTravelDistance - idealTravelDistance) / actualTravelDistance);
-                totalTravelEfficiency += travelEfficiency;
-                //System.out.println("Finished with calculations");
-            }
+        double alpha = 0.1;
+        double beta = 100;
+        double cost = getTotalJourneyCost(journey);
+        double satisfaction = getCustomerSatisfaction(journey);
 
-            distanceTravelled += sg.outgoingEdges.get(current).get(0).weight;
-            current = nextVertex;
-            continue;
-        }
-        double averageTravelEfficiency = totalTravelEfficiency/sg.size;
-        //System.out.println(averageTravelEfficiency);
-        //double averageWaitTimeEfficiency = totalWaitTimeEfficiency/sg.size;
-        //System.out.println(averageWaitTimeEfficiency);
-        double distanceTravelledEfficiency = (actualDistanceSum-idealDistanceSum)/actualDistanceSum;
-        //System.out.println(distanceTravelledEfficiency);
-
-        //double score = (distanceTravelledEfficiency + averageTravelEfficiency + 2*(averageTravelEfficiency))/4;
-        double score = distanceTravelled*averageTravelEfficiency;
-        return score;
+        return alpha*cost - beta*satisfaction;
     }
 
     public Route createRoute(int routeCount, Vehicle vehicle){
@@ -1778,7 +1686,7 @@ public class Scheduler {
         //System.out.println("....................");
         //System.out.println("....................\n");
         //CONFIGURATION - REAL TIME
-        int[] bestFeasibleRoute = getBestFeasible(currentPassengers, customer, customerPositions, capacity);
+        int[] bestFeasibleRoute = getFirstFeasible(currentPassengers, customer, customerPositions, capacity);
         if (bestFeasibleRoute != null){
             //System.out.printf("First feasible indexes for customer %d: {%d, %d}\n", customer.id, firstFeasibleRoute[0], firstFeasibleRoute[1]);
             if (bestFeasibleRoute[0] > currentPassengers.size()){
@@ -1830,7 +1738,7 @@ public class Scheduler {
     public void printJourney(List<SubGraph> journey){
         for (SubGraph graphRoute : journey) {
             System.out.println(graphRoute.printGraph());
-            System.out.println("Score: " + score(graphRoute));
+            //System.out.println("Score: " + score(graphRoute));
             System.out.println("Cost: " + graphRoute.getCost());
             System.out.println();
         }

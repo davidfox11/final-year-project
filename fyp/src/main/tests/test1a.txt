@@ -1,97 +1,16 @@
-NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 30 orders from customers1.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.82856544725326NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers2.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8455111567884273NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 60 orders from customers3.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8244728196113094NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 70 orders from customers4.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8262726587430193NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers5.csv
-Time window: Max Time window: 2 Sparsity: 1
-0.8213679871918624NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers6.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8376448455702499NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers7.csv
-Time window: Max Time window: 4 Sparsity: 3
-0.8383694865359707NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers8.csv
-Time window: Max Time window: 5 Sparsity: 4
-0.8192092732263601NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers9.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8340406323361533NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 4
-Customer orders: 40 orders from customers10.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8313387642797128NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 3
-Customer orders: 40 orders from customers11.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8193605537043858NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 2
-Customer orders: 40 orders from customers12.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8284065804546515NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 6
-Number of Vehicles: 5
-Customer orders: 40 orders from customers13.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.830892201732795NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 8
-Number of Vehicles: 5
-Customer orders: 40 orders from customers14.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8373590922739205NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 10
-Number of Vehicles: 5
-Customer orders: 40 orders from customers15.csv
-Time window: Max Time window: 3 Sparsity: 2
-0.8265357330937113NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
-Number of iterations: 5
-Vehicle Size: 12
-Number of Vehicles: 5
-Customer orders: 40 orders from customers16.csv
-Time window: Max Time window: 3 Sparsity: 2
+0.82856544725326
+0.8455111567884273
+0.8244728196113094
+0.8262726587430193
+0.8213679871918624
+0.8376448455702499
+0.8383694865359707
+0.8192092732263601
+0.8340406323361533
+0.8313387642797128
+0.8193605537043858
+0.8284065804546515
+0.830892201732795
+0.8373590922739205
+0.8265357330937113
 0.8145951550125701

@@ -23,7 +23,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws ParseException, IOException {
-        run("../tests/test2a.txt");
+        run("../tests/test11b.txt");
     }
 
     public static void run(String resultsFile) throws ParseException, IOException {
@@ -71,19 +71,20 @@ public class Main {
         };
         printProgress(0, 32);
         int progressCount = 1;
-        for (int i=0; i<16; i++){
+        for (int j=40; j<=40; j+=10){
+            int i = 2;
             String inputFile = String.format("customers%d.csv", i+1);
-            IteratedLocalSearch ils = new IteratedLocalSearch(changes[i][0], changes[i][1], inputFile, "../tests/test1.txt", changes[i][2], changes[i][3], changes[i][4], changes[i][5], changes[i][6]);
+            IteratedLocalSearch ils = new IteratedLocalSearch(j, changes[i][1], inputFile, "../tests/test1.txt", changes[i][2], changes[i][3], changes[i][4], changes[i][5], changes[i][6]);
             try{
-                //ils.optimiseCost();
-                //br.write(ils.costMsg);
-                //System.out.println(ils.costMsg);
+                ils.optimiseCost();
+                br.write(ils.costMsg);
+                System.out.println(ils.costMsg);
                 printProgress(progressCount, 32);
                 progressCount ++;
                 br.write("");
-                ils.optimiseSatisfaction();
-                br.write(ils.satisfactionMsg);
-                System.out.println(ils.satisfactionMsg);
+                //ils.optimiseSatisfaction();
+                //br.write(ils.satisfactionMsg);
+                //System.out.println(ils.satisfactionMsg);
                 printProgress(progressCount, 32);
                 progressCount ++;
                 br.write("");
@@ -96,6 +97,7 @@ public class Main {
 
 
         }
+        System.out.println("Done");
 
         br.close();
         fr.close();

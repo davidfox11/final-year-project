@@ -267,7 +267,7 @@ Customer Satisfaction: 0.81
 Total of 5 improvements after 6 iterations
 Average time for each iteration: 169.67 seconds
 Inserted 20 real-time customers
-Overall cost: 1834.20
+Overall cost: 3634.2
 Overall satisfaction 0.81
 ************************************************************
 NEW TEST - OPTIMIZING CUSTOMER SATISFACTION:
@@ -361,7 +361,7 @@ Initial cost: 2659.5
 Final cost: 1454.70
 Customer Satisfaction: 0.65
 Total of 6 improvements after 332 iterations
-Average time for each iteration: 16.09 seconds
+Average time for each iteration: 0.53 seconds
 Inserted 20 real-time customers
 Overall cost: 6026.40
 Overall satisfaction 0.71
